@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.6
+                     Package "Config::Manager" Version 1.7
                    =========================================
 
 
@@ -9,6 +9,16 @@
 
 Version history:
 ----------------
+
+Version 1.7   13.07.2003
+
+ +  Added SPECIAL configuration constants HOUR, MIN, SEC and WDAY
+ +  Added mention of showchain.pl to the Config::Manager manpage
+ +  Corrected the description of "MakeDir()" in File.pm
+ +  Script showchain.pl doesn't pipe output via "more" anymore
+ +  Removed excessive indentation from the output of showconf.pl
+ +  Now 'source' and 'line' attributes for $[SPECIAL]{HOME} and
+    $[SPECIAL]{WHOAMI} are properly set
 
 Version 1.6   28.06.2003
 

@@ -94,6 +94,7 @@ unless ((-t STDOUT) && (open(MORE, "| more")))
 $max = 0;
 foreach $item (@{$list})
 {
+    next if (defined $$item[3] and $$item[3] =~ /^<.*>$/);
     $len = length($$item[1]) + length($$item[2]);
     $len += 2 if ($$item[0]);
     $max = $len if ($len > $max);
@@ -106,6 +107,7 @@ foreach $item (@{$list})
     else           { $line = '! ' . $$item[1] . ' : '  . $$item[2]; }
     if ($$item[3])
     {
+        $len = $max if ($len > $max);
         $line .= (' ' x ($max-$len)) . ' => ' . $$item[3];
         if ($$item[4])
         {

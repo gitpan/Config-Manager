@@ -24,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.6';
+$VERSION = '1.7';
 
 1;
 
@@ -45,6 +45,7 @@ and go from there.
 See also the scripts
 
  listconf.pl   [listconf.bat]
+ showchain.pl  [showchain.bat]
  showconf.pl   [showconf.bat]
  update_ini.pl [update_ini.bat]
 
@@ -160,6 +161,7 @@ and scripts:
  Config::Manager::User
 
  listconf.pl   [listconf.bat]
+ showchain.pl  [showchain.bat]
  showconf.pl   [showconf.bat]
  update_ini.pl [update_ini.bat]
 
@@ -175,7 +177,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager" version 1.6.
+This man page documents "Config::Manager" version 1.7.
 
 =head1 AUTHORS
 

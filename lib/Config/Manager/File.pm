@@ -42,7 +42,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.6';
+$VERSION = '1.7';
 
 use Symbol;
 use Fcntl qw(:DEFAULT :flock);
@@ -1038,10 +1038,8 @@ uses a colon (":").
 C<$error = MakeDir($dir);>
 
 This function recursively creates the given (absolute)
-path (the path is normalized using the "Normalize()"
-function above before being created, i.e., the path
-is assumed to be absolute and a leading slash will be
-added if necessary).
+path (note that the path is normalized using the
+"Normalize()" function above before being created).
 
 The function returns an empty string in case of success
 and a string containing an error message in case of an
@@ -1450,7 +1448,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::File" version 1.6.
+This man page documents "Config::Manager::File" version 1.7.
 
 =head1 AUTHORS
 

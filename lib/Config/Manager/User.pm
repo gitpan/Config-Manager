@@ -29,7 +29,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.6';
+$VERSION = '1.7';
 
 use Config::Manager::Conf qw( whoami );
 use Config::Manager::Report qw(:all);
@@ -447,7 +447,7 @@ Config::Manager::SendMail(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::User" version 1.6.
+This man page documents "Config::Manager::User" version 1.7.
 
 =head1 AUTHORS
 

@@ -24,7 +24,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::Base::VERSION eq '1.6')
+    if ($Config::Manager::Base::VERSION eq '1.7')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;
@@ -44,7 +44,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::Conf::VERSION eq '1.6')
+    if ($Config::Manager::Conf::VERSION eq '1.7')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;
@@ -64,7 +64,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::User::VERSION eq '1.6')
+    if ($Config::Manager::User::VERSION eq '1.7')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;

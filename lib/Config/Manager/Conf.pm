@@ -28,7 +28,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.6';
+$VERSION = '1.7';
 
 ################################################################################
 # Datenstrukturen
@@ -54,7 +54,11 @@ my $NEXTCONF = 'NEXTCONF';
 my $YEAR     = 'YEAR';
 my $MONTH    = 'MONTH';
 my $DAY      = 'DAY';
+my $HOUR     = 'HOUR';
+my $MIN      = 'MIN';
+my $SEC      = 'SEC';
 my $YDAY     = 'YDAY';
+my $WDAY     = 'WDAY';
 my $YY       = 'YY';
 my $CC       = 'CC';
 my $OS       = 'OS';
@@ -130,6 +134,8 @@ sub get {
         return $ENV{$key} if $section eq $ENV && defined $ENV{$key};
         if ($section eq $SPECIAL &&
             ($key eq $WHOAMI || $key eq $HOME)) {
+            $$self{$section}{$key}{'source'} = $SYS;
+            $$self{$section}{$key}{'line'} = 0;
             unless (($value) = &whoami()) {
                 return $self->_error( _not_found_($SPECIAL,$WHOAMI) );
             }
@@ -321,20 +327,26 @@ sub _init {
     %{$self} = ();
     # Liste der eingelesenen Dateien anlegen:
     $$self{'<files>'} = [];
-    # Datumsangaben fuer SPECIAL-Section aus localtime() holen
+    # Datumsangaben fuer SPECIAL-Section aus localtime() holen:
     my @localtime = localtime();
-    # Jahresangabe bezieht sich auf das Basisjahr 1900
+    # Jahresangabe bezieht sich auf das Basisjahr 1900:
     $localtime[5] += 1900;
-    # Monat ist im Bereich 0-11, daher eins addieren
+    # Monat ist im Bereich 0-11, daher eins addieren:
     $localtime[4]++;
-    # der erste Januar ist in localtime() der nullte Tag, daher eins addieren:
+    # Der erste Januar ist in localtime() der nullte Tag, daher eins addieren:
     $localtime[7]++;
+    # Der Wochentag Sonntag ist in localtime() mit Null kodiert:
+    $localtime[6] = 7 unless ($localtime[6]);
     # Tag und Monat zweistellig fuer eindeutige Zeitstempel (2000123 kann der
-    # 3.Dezember oder der 23.Januar sein); Tag des Jahres dreistellig.
+    # 3. Dezember oder der 23. Januar sein); Tag des Jahres dreistellig:
     $self->set($SYS, $SPECIAL, $YEAR,  $localtime[5]);
     $self->set($SYS, $SPECIAL, $MONTH, sprintf('%02d',$localtime[4]));
     $self->set($SYS, $SPECIAL, $DAY,   sprintf('%02d',$localtime[3]));
+    $self->set($SYS, $SPECIAL, $HOUR,  sprintf('%02d',$localtime[2]));
+    $self->set($SYS, $SPECIAL, $MIN,   sprintf('%02d',$localtime[1]));
+    $self->set($SYS, $SPECIAL, $SEC,   sprintf('%02d',$localtime[0]));
     $self->set($SYS, $SPECIAL, $YDAY,  sprintf('%03d',$localtime[7]));
+    $self->set($SYS, $SPECIAL, $WDAY,                 $localtime[6] );
     $self->set($SYS, $SPECIAL, $YY,    sprintf('%02d',$localtime[5]%100));
     $self->set($SYS, $SPECIAL, $CC,    int($localtime[5]/100));
     $self->set($SYS, $SPECIAL, $OS,    $^O);
@@ -1280,7 +1292,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::Conf" version 1.6.
+This man page documents "Config::Manager::Conf" version 1.7.
 
 =head1 AUTHORS
 

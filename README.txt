@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.6
+                     Package "Config::Manager" Version 1.7
                    =========================================
 
 
@@ -16,46 +16,16 @@ or from any CPAN (= "Comprehensive Perl Archive Network") mirror server:
                http://www.perl.com/CPAN/authors/id/S/ST/STBEY/
 
 
-What's new in version 1.6:
+What's new in version 1.7:
 --------------------------
 
- Config::Manager::Report:
-
- +  The name and path of the default logfile can now be influenced
-    (the "singleton()" class method now passes arguments to "new()")
- +  Changed the default path and filename of logfile objects
-    (now uses the user login to discriminate further)
- +  Adapted the test suite accordingly
- +  Functions "Normalize()" and "MakeDir()" are now physically
-    located in Config::Manager::Report
- +  The constructor now automatically creates the logfile's path
-    (with "MakeDir()") if necessary
- +  Added new import targets ":aux" and ":ALL" (":aux" contains
-    "Normalize" and "MakeDir", ":ALL" contains ":all" and ":aux")
-
- Config::Manager::File:
-
- +  Functions "Normalize()" and "MakeDir()" are now imported from
-    Config::Manager::Report and re-exported
- +  Function "Normalize()" now also supports relative paths
-
- Config::Manager::Conf:
-
- +  Added the method "get_files()" to get the list of configuration
-    files which led to the current configuration object, in the
-    order they were read in
- +  Changed the method "get_all()", it now returns a list of
-    anonymous arrays containing a flag, the name, the value, the
-    source file and line number of each configuration constant
- +  Adapted the test suite accordingly
-
- scripts:
-
- +  Added the script "showchain.pl" to show the chain of
-    configuration files which are read in for a given
-    scope and user
- +  Changed the script "showconf.pl" to also show the file
-    of origin and line number of each configuration constant
+ +  Added SPECIAL configuration constants HOUR, MIN, SEC and WDAY
+ +  Added mention of showchain.pl to the Config::Manager manpage
+ +  Corrected the description of "MakeDir()" in File.pm
+ +  Script showchain.pl doesn't pipe output via "more" anymore
+ +  Removed excessive indentation from the output of showconf.pl
+ +  Now 'source' and 'line' attributes for $[SPECIAL]{HOME} and
+    $[SPECIAL]{WHOAMI} are properly set
 
 
 Legal issues:

@@ -83,20 +83,20 @@ if (($@ ne '') or ($error ne ''))
     die "$self: $error\n";
 }
 
-unless ((-t STDOUT) && (open(MORE, "| more")))
-{
-    unless (open(MORE, ">-"))
-    {
-        die "$self: can't open STDOUT: $!\n";
-    }
-}
+#unless ((-t STDOUT) && (open(MORE, "| more")))
+#{
+#    unless (open(MORE, ">-"))
+#    {
+#        die "$self: can't open STDOUT: $!\n";
+#    }
+#}
 
 foreach $line (@{$list})
 {
-    print MORE "$line\n";
+    print "$line\n";
 }
 
-close(MORE);
+#close(MORE);
 
 exit 0; # 0 = OK
 
