@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.4
+                     Package "Config::Manager" Version 1.5
                    =========================================
 
 
@@ -9,6 +9,10 @@
 
 Version history:
 ----------------
+
+Version 1.5   09.06.2003
+
+ +  Added constant $[SPECIAL]{PERL} which contains $^X
 
 Version 1.4   18.05.2003
 

@@ -31,7 +31,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.4';
+$VERSION = '1.5';
 
 use Config::Manager::Conf qw( whoami );
 use Symbol;
@@ -1163,7 +1163,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::Report" version 1.4.
+This man page documents "Config::Manager::Report" version 1.5.
 
 =head1 AUTHORS
 

@@ -28,7 +28,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.4';
+$VERSION = '1.5';
 
 ################################################################################
 # Datenstrukturen
@@ -57,6 +57,7 @@ my $YDAY     = 'YDAY';
 my $YY       = 'YY';
 my $CC       = 'CC';
 my $OS       = 'OS';
+my $PERL     = 'PERL';
 my $HOME     = 'HOME';
 my $WHOAMI   = 'WHOAMI';
 # Verarbeitungszustaende
@@ -237,7 +238,7 @@ sub set {
     my $source  = pop || $CMDLINE;
     return $self->_error( _read_only_($SPECIAL,$key) )
         if ($section eq $SPECIAL && $source ne $SYS &&
-        ($key eq $OS || $key eq $SCOPE));
+        ($key eq $OS || $key eq $PERL || $key eq $SCOPE));
     return $self->_set($source, 0, $section, $key, $value, 1);
 }
 
@@ -315,6 +316,7 @@ sub _init {
     $self->set($SYS, $SPECIAL, $YY,    sprintf('%02d',$localtime[5]%100));
     $self->set($SYS, $SPECIAL, $CC,    int($localtime[5]/100));
     $self->set($SYS, $SPECIAL, $OS,    $^O);
+    $self->set($SYS, $SPECIAL, $PERL,  $^X);
     $self->set($SYS, $SPECIAL, $SCOPE, $NONE);
     return $self;
 }
@@ -1222,7 +1224,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::Conf" version 1.4.
+This man page documents "Config::Manager::Conf" version 1.5.
 
 =head1 AUTHORS
 
