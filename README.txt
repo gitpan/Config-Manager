@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.3
+                     Package "Config::Manager" Version 1.4
                    =========================================
 
 
@@ -16,14 +16,18 @@ or from any CPAN (= "Comprehensive Perl Archive Network") mirror server:
                http://www.perl.com/CPAN/authors/id/S/ST/STBEY/
 
 
-What's new in version 1.3:
+What's new in version 1.4:
 --------------------------
 
- +  Replaced MD5 with Digest::MD5
- +  Made some cosmetic changes to error messages
-    in Config::Manager::Conf
- +  Changed the test suite accordingly
- +  Fixed the broken images from version 1.2
+ +  Changed some wordings in Config::Manager::Report
+ +  Fixed syntax error in Config::Manager::SendMail
+ +  Improved the overview manual page "Config::Manager"
+ +  Added "Normalize()" and "MakeDir()" to Config::Manager::File
+ +  Added missing documentation parts to Config::Manager::File
+ +  Config::Manager::File now localizes all global Perl variables
+ +  Config::Manager::File now uses file locking (flock)
+ +  Added new prerequisite "Fcntl" to Makefile.PL
+ +  Removed the pointless file histories from all modules
 
 
 Legal issues:

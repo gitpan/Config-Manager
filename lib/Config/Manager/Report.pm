@@ -31,7 +31,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.3';
+$VERSION = '1.4';
 
 use Config::Manager::Conf qw( whoami );
 use Symbol;
@@ -78,8 +78,8 @@ my $FOOTER  = 'ENDED';
 
 my @LEADIN =
 (
-    [ 'CALL',  'HINT',  'WARNING',  'ERROR',  'EXCEPTION'  ], # Singular
-    [ 'CALLS', 'HINTS', 'WARNINGS', 'ERRORS', 'EXCEPTIONS' ]  # Plural
+    [ 'TRACE',  'HINT',  'WARNING',  'ERROR',  'EXCEPTION'  ], # Singular
+    [ 'TRACES', 'HINTS', 'WARNINGS', 'ERRORS', 'EXCEPTIONS' ]  # Plural
 );
 
 my $LINE0 = 'line on hold';
@@ -167,7 +167,7 @@ sub _LongTime
 {
     my($s,$m,$h,$dd,$mm,$yy) = localtime(time);
     $yy += 1900;
-    $mm = (qw(Jan Feb Mar Apr Mai Jun Jul Aug Sep Oct Nov Dec))[$mm];
+    $mm = (qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec))[$mm];
     return sprintf("%02d-%s-%d %02d:%02d:%02d", $dd,$mm,$yy,$h,$m,$s);
 }
 
@@ -1151,10 +1151,45 @@ Loescht die Halde des betreffeden Objekts.
 
 =back
 
-=head1 HISTORY
+=head1 SEE ALSO
 
- 2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
- 2003_02_14  Steffen Beyer                   Version 1.1
- 2003_04_26  Steffen Beyer                   Version 1.2
- 2003_05_01  Steffen Beyer                   Version 1.3
+Config::Manager(3),
+Config::Manager::Base(3),
+Config::Manager::Conf(3),
+Config::Manager::File(3),
+Config::Manager::PUser(3),
+Config::Manager::SendMail(3),
+Config::Manager::User(3).
+
+=head1 VERSION
+
+This man page documents "Config::Manager::Report" version 1.4.
+
+=head1 AUTHORS
+
+ Steffen Beyer <sb@engelschall.com>
+ http://www.engelschall.com/u/sb/download/
+ Gerhard Albers
+
+=head1 COPYRIGHT
+
+ Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
+ All rights reserved.
+
+=head1 LICENSE
+
+This package is free software; you can use, modify and redistribute
+it under the same terms as Perl itself, i.e., under the terms of
+the "Artistic License" or the "GNU General Public License".
+
+Please refer to the files "Artistic.txt" and "GNU_GPL.txt"
+in this distribution, respectively, for more details!
+
+=head1 DISCLAIMER
+
+This package is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the "GNU General Public License" for more details.
 

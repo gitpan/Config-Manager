@@ -21,6 +21,8 @@ require Exporter;
 @EXPORT = qw();
 
 @EXPORT_OK = qw(
+                   Normalize
+                   MakeDir
                    UniqueTempFileName
                    ConvertFromHost
                    ConvertToHost
@@ -40,7 +42,10 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.3';
+$VERSION = '1.4';
+
+use Symbol;
+use Fcntl qw(:DEFAULT :flock);
 
 use Config::Manager::Base qw( $SCOPE );
 use Config::Manager::Conf;
@@ -87,6 +92,47 @@ END
 ## Public functions: ##
 #######################
 
+sub Normalize
+{
+    my $dir = defined $_[0] ? $_[0] : '';
+    my $drv = '';
+
+    if ($dir =~ s!^([a-zA-Z]:)!!) { $drv = $1; }
+    $dir = "/$dir/";
+    $dir =~ s!\\!/!g;
+    $dir =~ s!//+!/!g;
+    while ($dir =~ s!/(?:\./)+!/!g) {};
+    while ($dir =~ s,/(?!\.\./)[^/]+/\.\./,/,g) {};
+    $dir =~ s!^/(?:\.\./)+!/!g;
+    $dir =~ s!^/!!;
+    $dir =~ s!/$!!;
+
+    return wantarray ? ($drv,$dir) : "$drv/$dir";
+}
+
+sub MakeDir
+{
+    my($drv,$dir) = Normalize($_[0]);
+    my(@dir);
+    local($!);
+
+    return '' if (-d "$drv/$dir");
+    @dir = split(/\//, $dir);
+    $dir = $drv;
+    while (@dir)
+    {
+        $dir .= '/' . shift(@dir);
+        unless (-d $dir)
+        {
+            unless (mkdir($dir,0777))
+            {
+                return "Can't mkdir '$dir': $!";
+            }
+        }
+    }
+    return '';
+}
+
 sub UniqueTempFileName
 {
     my($path,$error,$file);
@@ -127,9 +173,10 @@ sub ConvertFromHost
 {
     my($target,$source,$lines,$purge,$kludge) = @_;
     my($error,$line);
-
-    local($.);
     local($/) = "\n";
+    local($.);
+    local($!);
+
     unless (-f $source && -s $source)
     {
         Config::Manager::Report->report(@ERROR,
@@ -194,9 +241,10 @@ sub ConvertToHost
 {
     my($target,$source,$lines,$purge,$check,$kludge) = @_;
     my($maxlen,$error,$line);
-
-    local($.);
     local($/) = "\n";
+    local($.);
+    local($!);
+
     unless (-f $source && -s $source)
     {
         Config::Manager::Report->report(@ERROR,
@@ -275,6 +323,7 @@ sub CompareFiles
 {
     my($source,$target) = @_;
     my($rc);
+    local($!);
 
     # returns true  (1) if both files have identical contents,
     #         false (0) if their contents differ,
@@ -304,6 +353,7 @@ sub CompareFiles
 sub CopyFile
 {
     my($source,$target) = @_;
+    local($!);
 
     unless (-f $source)
     {
@@ -323,6 +373,7 @@ sub CopyFile
 sub MoveByCopying
 {
     my($source,$target) = @_;
+    local($!);
 
     unless (-f $source)
     {
@@ -349,6 +400,7 @@ sub MD5Checksum
 {
     my($source) = @_;
     my($md5,$checksum);
+    local($!);
 
     unless (-f $source)
     {
@@ -378,8 +430,9 @@ sub ReadFile
 {
     my($source) = @_;
     my(@text);
-
     local($/) = "\n";
+    local($!);
+
     unless (-f $source)
     {
         Config::Manager::Report->report(@ERROR,
@@ -405,6 +458,7 @@ sub WriteFile
 {
     my($target) = shift;
     my($item,$line);
+    local($!);
 
     unless (open(TARGET, ">$target"))
     {
@@ -451,6 +505,7 @@ sub AppendFile
 {
     my($target,$source) = @_;
     my($size,$buffer,$read,$offset,$written);
+    local($!);
 
     unless (-f $source)
     {
@@ -568,9 +623,10 @@ sub ConvertFileWithCallback
 {
     my($target,$source,$callback) = @_;
     my($line);
-
-    local($.);
     local($/) = "\n";
+    local($.);
+    local($!);
+
     unless (defined $callback && ref($callback) && ref($callback) eq 'CODE')
     {
         Config::Manager::Report->report(@FATAL,
@@ -723,6 +779,7 @@ sub Semaphore_Passeer
 {
     my($semaphore) = @_; # this is a filename!
     my($wait,$pid);
+    local($!);
 
     $wait = 1;
     # Wait for semaphore:
@@ -773,6 +830,7 @@ sub Semaphore_Passeer
 sub Semaphore_Verlaat
 {
     my($semaphore) = @_;
+    local($!);
 
     # Release semaphore:
     unless (unlink($semaphore))
@@ -786,55 +844,122 @@ sub Semaphore_Verlaat
 
 sub GetNextTicket
 {
-    my($lockfile,$ticketfile,$count_min,$count_max) = @_;
-    my($why,$counter);
+    my($lock,$file,$count_min,$count_max) = @_;
+    my($ok,$error,$counter);
+    local($!);
+    local($@);
 
-    &Semaphore_Passeer($lockfile);
-    # Get next ticket number:
-    if (-f $ticketfile)
+    $ok = 0;
+    $file = Normalize($file);
+    $lock = Normalize($lock) if ($lock);
+    my $FH_FILE = gensym();
+    unless (sysopen($FH_FILE, $file, O_RDWR|O_CREAT))
     {
-        unless (open(TICKET, "<$ticketfile"))
+        Config::Manager::Report->report(@ERROR,
+            "Can't open ticket file '$file': $!");
+        return undef;
+    }
+    eval
+    {
+        $ok = flock($FH_FILE, LOCK_EX);
+    };
+    if ($@)
+    {
+        if ($@ =~ /\bunimplemented\b/)
         {
-            $why = "$!";
-            &Semaphore_Verlaat($lockfile);
-            Config::Manager::Report->report(@ERROR,
-                "Can't read ticket file '$ticketfile': $why");
-            return undef;
-        }
-        $counter = <TICKET>;
-        close(TICKET);
-        $counter =~ s!^\s+!!;
-        $counter =~ s!\s+$!!;
-        if ($counter !~ /^[0-9a-zA-Z]+$/)
-        {
-            $counter = $count_min;
-            Config::Manager::Report->report(@WARN,
-                "No counter value found in ticket file '$ticketfile'!",
-                "Using '$counter' instead.");
+            &Semaphore_Passeer($lock) if ($lock);
+            $ok = 1;
         }
         else
         {
+            $error = $@;
+            $error =~ s!\s+! !g;
+            $error =~ s!\(.*$!!;
+            $error =~ s!\s+at\s.*$!!;
+            $error =~ s!\s+$!!;
+            Config::Manager::Report->report(@ERROR,
+                "Can't flock ticket file '$file': $error");
+            close($FH_FILE);
+            return undef;
+        }
+    }
+    else
+    {
+        if ($ok)
+        {
+            $lock = '';
+        }
+        else
+        {
+            Config::Manager::Report->report(@ERROR,
+                "Can't flock ticket file '$file': $!");
+            close($FH_FILE);
+            return undef;
+        }
+    }
+    unless (seek($FH_FILE, 0, 0))
+    {
+        Config::Manager::Report->report(@ERROR,
+            "Can't seek ticket file '$file': $!");
+        close($FH_FILE);
+        &Semaphore_Verlaat($lock) if ($lock);
+        return undef;
+    }
+    if (defined ($counter = <$FH_FILE>))
+    {
+        $counter =~ s!^\s+!!;
+        $counter =~ s!\s+$!!;
+        if ($counter =~ /^[0-9a-zA-Z]+$/)
+        {
             $counter = $count_min if (($counter eq $count_max) || (++$counter gt $count_max));
+        }
+        else
+        {
+            $counter = $count_min;
+            Config::Manager::Report->report(@WARN,
+                "No valid ticket number found in file '$file'!",
+                "Resetting the counter to value '$counter'.");
         }
     }
     else
     {
         $counter = $count_min;
         Config::Manager::Report->report(@WARN,
-            "No ticket file '$ticketfile' found!",
-            "Creating new one and setting counter to value '$counter'.");
+            "No ticket number found in file '$file'!",
+            "Setting the counter to value '$counter'.");
     }
-    unless (open(TICKET, ">$ticketfile"))
+    unless (truncate($FH_FILE, 0))
     {
-        $why = "$!";
-        &Semaphore_Verlaat($lockfile);
         Config::Manager::Report->report(@ERROR,
-            "Can't write ticket file '$ticketfile': $why");
+            "Can't truncate ticket file '$file': $!");
+        close($FH_FILE);
+        &Semaphore_Verlaat($lock) if ($lock);
         return undef;
     }
-    print TICKET "$counter\n";
-    close(TICKET);
-    &Semaphore_Verlaat($lockfile);
+    unless (seek($FH_FILE, 0, 0))
+    {
+        Config::Manager::Report->report(@ERROR,
+            "Can't seek ticket file '$file': $!");
+        close($FH_FILE);
+        &Semaphore_Verlaat($lock) if ($lock);
+        return undef;
+    }
+    unless (print($FH_FILE "$counter\n"))
+    {
+        Config::Manager::Report->report(@ERROR,
+            "Can't print ticket file '$file': $!");
+        close($FH_FILE);
+        &Semaphore_Verlaat($lock) if ($lock);
+        return undef;
+    }
+    unless (close($FH_FILE))
+    {
+        Config::Manager::Report->report(@ERROR,
+            "Can't close ticket file '$file': $!");
+        &Semaphore_Verlaat($lock) if ($lock);
+        return undef;
+    }
+    &Semaphore_Verlaat($lock) if ($lock);
     return $counter;
 }
 
@@ -850,6 +975,8 @@ Config::Manager::File - Basic File Utilities (for Tools)
 
   use Config::Manager::File
   qw(
+        Normalize
+        MakeDir
         UniqueTempFileName
         ConvertFromHost
         ConvertToHost
@@ -862,9 +989,18 @@ Config::Manager::File - Basic File Utilities (for Tools)
         AppendFile
         ConvertFileWithCallback
         SerializeSimple
+        Semaphore_Passeer
+        Semaphore_Verlaat
+        GetNextTicket
   );
 
   use Config::Manager::File qw(:all);
+
+  $dir = Normalize($dir);
+
+  ($drv,$dir) = Normalize($dir);
+
+  $error = MakeDir($dir);
 
   $tempfilename = &UniqueTempFileName();
 
@@ -890,9 +1026,57 @@ Config::Manager::File - Basic File Utilities (for Tools)
 
   $printable = &SerializeSimple("varname",$datastructure);
 
+  Semaphore_Passeer($lockfile);
+
+  Semaphore_Verlaat($lockfile);
+
+  $ticket = GetNextTicket($lockfile,$ticketfile,$count_min,$count_max);
+
 =head1 DESCRIPTION
 
 =over 2
+
+=item *
+
+C<$dir = Normalize($dir);>
+
+C<($drv,$dir) = Normalize($dir);>
+
+Normalizes a given path (which may include a filename part),
+i.e., substitutes "\" with "/", removes multiple slashes,
+removes "../" and "./" where possible, etc.
+
+This function assumes absolute paths and will prepend a
+slash if necessary. Any trailing slash(es) will be removed.
+
+If called in list context, this function returns a possible
+drive letter and the path (without leading slash this time)
+separately.
+
+In scalar context, the function returns C<"$drive/$path">.
+
+If the input path does not contain a drive letter, the
+"C<$drive>" part will be empty (the empty string).
+
+So this function works for Unix and Win32 alike,
+but not for other operating systems with different
+path separator characters that aren't slash ("/") or
+backslash ("\"), such as MacOS, for example, which
+uses a colon (":").
+
+=item *
+
+C<$error = MakeDir($dir);>
+
+This function recursively creates the given (absolute)
+path (the path is normalized using the "Normalize()"
+function above before being created, i.e., the path
+is assumed to be absolute and a leading slash will be
+added if necessary).
+
+The function returns an empty string in case of success
+and a string containing an error message in case of an
+error.
 
 =item *
 
@@ -1209,12 +1393,121 @@ in advance which variable name to expect), and remember that you
 can always fully qualify this variable name in order to force it
 into any given package you want.
 
+=item *
+
+C<Semaphore_Passeer($lockfile);>
+
+Protect critical sections in your code with this relatively
+simple yet usually sufficient file locking mechanism.
+
+The given file may not be used for anything else, as it will
+be created and deleted and its contents rewritten.
+
+In case of an error, the corresponding error message is
+written to the default logfile and sent to the screen,
+but the function will keep on trying infinitely.
+
+There is no specific return value on success.
+
+=item *
+
+C<Semaphore_Verlaat($lockfile);>
+
+Leave critical sections in your code by calling this function
+with the same argument you called "Semaphore_Passeer()" (see
+immediately above) before the critical section.
+
+In case of an error, the corresponding error message is
+written to the default logfile and sent to the screen,
+and "undef" is returned.
+
+In case of success a true value is returned.
+
+=item *
+
+C<$ticket = GetNextTicket($lockfile,$ticketfile,$min,$max);>
+
+Get ticket numbers, protected by (true) file locking.
+
+The ticket number is created automatically if it doesn't exist
+yet (and initialized to the "C<$min>" value given).
+
+Ticket number values may contain the characters [0-9a-zA-Z]
+(in any combination).
+
+The ticket number is incremented automatically at each call of
+this function (using Perl's "magic" incrementation if the value
+contains alphanumeric characters).
+
+When the ticket number exceeds the given "C<$max>" value, it
+is reset to "C<$min>" (i.e., the function implements automatic
+wrapping).
+
+In case file locking is not implemented on your machine, this
+function uses "Semaphore_Passeer()" and "Semaphore_Verlaat()"
+(see above) instead, provided that a non-empty lockfile name
+has been given. Otherwise (if the lockfile name is undefined
+or empty) no file locking will be performed at all.
+
+Note that this function will always attempt to unlink
+(i.e., delete) this lockfile if it is specified before
+returning.
+
+Thus it is advantageous to leave the lockfile name undefined
+or empty if you know that your program will always run on
+machines which support file locking.
+
+Note also that the lockfile and the ticketfile must be
+distinct of course.
+
+In case of an error, the corresponding error message is
+written to the default logfile and sent to the screen,
+execution of the function is aborted and "undef" is
+returned.
+
+In case of success the new ticket number is returned.
+
 =back
 
-=head1 HISTORY
+=head1 SEE ALSO
 
- 2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
- 2003_02_14  Steffen Beyer                   Version 1.1
- 2003_04_26  Steffen Beyer                   Version 1.2
- 2003_05_01  Steffen Beyer                   Version 1.3
+Config::Manager(3),
+Config::Manager::Base(3),
+Config::Manager::Conf(3),
+Config::Manager::PUser(3),
+Config::Manager::Report(3),
+Config::Manager::SendMail(3),
+Config::Manager::User(3).
+
+=head1 VERSION
+
+This man page documents "Config::Manager::File" version 1.4.
+
+=head1 AUTHORS
+
+ Steffen Beyer <sb@engelschall.com>
+ http://www.engelschall.com/u/sb/download/
+ Gerhard Albers
+
+=head1 COPYRIGHT
+
+ Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
+ All rights reserved.
+
+=head1 LICENSE
+
+This package is free software; you can use, modify and redistribute
+it under the same terms as Perl itself, i.e., under the terms of
+the "Artistic License" or the "GNU General Public License".
+
+Please refer to the files "Artistic.txt" and "GNU_GPL.txt"
+in this distribution, respectively, for more details!
+
+=head1 DISCLAIMER
+
+This package is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the "GNU General Public License" for more details.
 

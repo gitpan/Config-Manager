@@ -16,7 +16,7 @@ package Config::Manager::Conf;
 ################################################################################
 
 use strict;
-use vars qw( @ISA @EXPORT @EXPORT_OK $VERSION %INC %SIG );
+use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION %INC %SIG );
 
 require Exporter;
 
@@ -26,7 +26,9 @@ require Exporter;
 
 @EXPORT_OK = qw( whoami );
 
-$VERSION = '1.3';
+%EXPORT_TAGS = (all => [@EXPORT_OK]);
+
+$VERSION = '1.4';
 
 ################################################################################
 # Datenstrukturen
@@ -1208,10 +1210,45 @@ dann wird als Section C<[DEFAULT]> geschrieben.
 
 =back
 
-=head1 HISTORY
+=head1 SEE ALSO
 
- 2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
- 2003_02_14  Steffen Beyer                   Version 1.1
- 2003_04_26  Steffen Beyer                   Version 1.2
- 2003_05_01  Steffen Beyer                   Version 1.3
+Config::Manager(3),
+Config::Manager::Base(3),
+Config::Manager::File(3),
+Config::Manager::PUser(3),
+Config::Manager::Report(3),
+Config::Manager::SendMail(3),
+Config::Manager::User(3).
+
+=head1 VERSION
+
+This man page documents "Config::Manager::Conf" version 1.4.
+
+=head1 AUTHORS
+
+ Steffen Beyer <sb@engelschall.com>
+ http://www.engelschall.com/u/sb/download/
+ Gerhard Albers
+
+=head1 COPYRIGHT
+
+ Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
+ All rights reserved.
+
+=head1 LICENSE
+
+This package is free software; you can use, modify and redistribute
+it under the same terms as Perl itself, i.e., under the terms of
+the "Artistic License" or the "GNU General Public License".
+
+Please refer to the files "Artistic.txt" and "GNU_GPL.txt"
+in this distribution, respectively, for more details!
+
+=head1 DISCLAIMER
+
+This package is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the "GNU General Public License" for more details.
 

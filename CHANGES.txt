@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.3
+                     Package "Config::Manager" Version 1.4
                    =========================================
 
 
@@ -9,6 +9,18 @@
 
 Version history:
 ----------------
+
+Version 1.4   18.05.2003
+
+ +  Changed some wordings in Config::Manager::Report
+ +  Fixed syntax error in Config::Manager::SendMail
+ +  Improved the overview manual page "Config::Manager"
+ +  Added "Normalize()" and "MakeDir()" to Config::Manager::File
+ +  Added missing documentation parts to Config::Manager::File
+ +  Config::Manager::File now localizes all global Perl variables
+ +  Config::Manager::File now uses file locking (flock)
+ +  Added new prerequisite "Fcntl" to Makefile.PL
+ +  Removed the pointless file histories from all modules
 
 Version 1.3   01.05.2003
 
