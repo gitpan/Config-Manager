@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.0
+                     Package "Config::Manager" Version 1.1
                    =========================================
 
 
@@ -9,6 +9,13 @@
 
 Version history:
 ----------------
+
+Version 1.1   14.02.2003
+
+ +  Added more documentation
+ +  Added missing license files
+ +  Added working example configuration files
+ +  Added another test file
 
 Version 1.0   05.02.2003
 

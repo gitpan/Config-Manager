@@ -4,7 +4,8 @@
 ##    Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.                  ##
 ##    All rights reserved.                                                   ##
 ##                                                                           ##
-##    V 1.0 05.02.2003 Steffen Beyer & Gerhard Albers                        ##
+##    This package is free software; you can redistribute it                 ##
+##    and/or modify it under the same terms as Perl itself.                  ##
 ##                                                                           ##
 ###############################################################################
 
@@ -28,7 +29,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.0';
+$VERSION = '1.1';
 
 use Config::Manager::Conf;
 use Config::Manager::Report qw(:all);
@@ -82,127 +83,127 @@ BEGIN # Global initialization
     ###########################################################################
     # Initialize logging module and log file:
     Config::Manager::Report->singleton(); # trigger creation of singleton object
-#   Config::Manager::Report->notify(1); # in case this should be the default
+    Config::Manager::Report->notify(1); # in case this should be the default
     ###########################################################################
-    # Read configuration constants for command line option processing:
-    for ( $index = 0; $index < @Refs; $index++ )
-    {
-        $var = $Refs[$index];
-        $val = $Names[$index];
-        unless (defined (${$var} = Config::Manager::Conf->get( $Section, $val )))
-        {
-            $err = Config::Manager::Conf->error();
-            $err =~ s!\s+$!!;
-            Config::Manager::Report->report
-            (
-                $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
-                __PACKAGE__ . "::BEGIN():",
-    "Ermitteln der Konstanten '\$[$Section]{$val}' fehlgeschlagen:",
-                $err
-            );
-            &abort();
-        }
-        # Sanity check (*MUST* be uppercase in order to avoid
-        # clashes with lowercase tool-specific parameters!):
-        unless (${$var} =~ m!^[A-Z][A-Z0-9]*(?:\|[A-Z][A-Z0-9]*)*$!)
-        {
-            Config::Manager::Report->report
-            (
-                $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
-                __PACKAGE__ . "::BEGIN():",
-                "Syntaxfehler in Konstante '\$[$Section]{$val}'!"
-            );
-            &abort();
-        }
-    }
-    $match = "HOST=(?:$HOST_LIST)|LANG=(?:$LANG_LIST)|SRC=(?:$SRC_LIST)|OBJ=(?:$OBJ_LIST)|EXE=(?:$EXE_LIST)";
-    ###########################################################################
-    # The shortcuts below implement the following precedence rules:           #
-    # (low) Config File << Environment Variable << Command Line Option (high) #
-    ###########################################################################
-    # Configuration Shortcuts Part 1:
-    $index = 0;
-    LOOP1:
-    while ($index < @ARGV)
-    {
-        $param = \$ARGV[$index];
-        if ($$param =~ m!^-(?:$match)(?:,(?:$match))*$!o)
-        {
-            splice(@ARGV,$index,1);
-            while ($$param =~ m!($match)!go)
-            {
-                $sec = $1;
-                ($var,$val) = split(/=/, $sec);
-                $EnvHost = 0 if ($var eq 'HOST');
-                $EnvLang = 0 if ($var eq 'LANG');
-                splice(@ARGV,$index,0,"-D${Section}::$var=$val");
-                $index++;
-            }
-            next LOOP1;
-        }
-        elsif ($$param =~ m!^-($HOST_LIST),($LANG_LIST),($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
-        {
-            $EnvHost = 0;
-            $EnvLang = 0;
-            splice(@ARGV,$index,1,
-                "-D${Section}::HOST=$1",
-                "-D${Section}::LANG=$2",
-                "-D${Section}::SRC=$3",
-                "-D${Section}::OBJ=$4",
-                "-D${Section}::EXE=$5" );
-            $index += 5;
-            next LOOP1;
-        }
-        elsif ($$param =~ m!^-($LANG_LIST),($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
-        {
-            $EnvLang = 0;
-            splice(@ARGV,$index,1,
-                "-D${Section}::LANG=$1",
-                "-D${Section}::SRC=$2",
-                "-D${Section}::OBJ=$3",
-                "-D${Section}::EXE=$4" );
-            $index += 4;
-            next LOOP1;
-        }
-        elsif ($$param =~ m!^-($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
-        {
-            splice(@ARGV,$index,1,
-                "-D${Section}::SRC=$1",
-                "-D${Section}::OBJ=$2",
-                "-D${Section}::EXE=$3" );
-            $index += 3;
-            next LOOP1;
-        }
-        elsif ($$param =~ m!^-($HOST_LIST),($LANG_LIST)$!o)
-        {
-            $EnvHost = 0;
-            $EnvLang = 0;
-            splice(@ARGV,$index,1,
-                "-D${Section}::HOST=$1",
-                "-D${Section}::LANG=$2" );
-            $index += 2;
-            next LOOP1;
-        }
-        elsif ($$param =~ s!^-($LANG_LIST)$!-D${Section}::LANG=$1!o) { $EnvLang = 0; }
-        elsif ($$param =~ m!^-D${Section}::LANG=(?:$LANG_LIST)$!o)   { $EnvLang = 0; }
-        elsif ($$param =~ s!^-($HOST_LIST)$!-D${Section}::HOST=$1!o) { $EnvHost = 0; }
-        elsif ($$param =~ m!^-D${Section}::HOST=(?:$HOST_LIST)$!o)   { $EnvHost = 0; }
-        $index++;
-    }
-    ###########################################################################
-    # Configuration Shortcuts Part 2:
-    unshift( @ARGV, "-D${Section}::LANG=$1" )
-        if ($EnvLang and
-            (exists  $ENV{'COMPLANG'}) and
-            (defined $ENV{'COMPLANG'}) and
-            (        $ENV{'COMPLANG'}  =~  m!^($LANG_LIST)$!o));
-    ###########################################################################
-    # Configuration Shortcuts Part 3:
-    unshift( @ARGV, "-D${Section}::HOST=$1" )
-        if ($EnvHost and
-            (exists  $ENV{'PLATFORM'}) and
-            (defined $ENV{'PLATFORM'}) and
-            (        $ENV{'PLATFORM'}  =~  m!^($HOST_LIST)$!o));
+#   # Read configuration constants for command line option processing:
+#   for ( $index = 0; $index < @Refs; $index++ )
+#   {
+#       $var = $Refs[$index];
+#       $val = $Names[$index];
+#       unless (defined (${$var} = Config::Manager::Conf->get( $Section, $val )))
+#       {
+#           $err = Config::Manager::Conf->error();
+#           $err =~ s!\s+$!!;
+#           Config::Manager::Report->report
+#           (
+#               $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
+#               __PACKAGE__ . "::BEGIN():",
+#   "Ermitteln der Konstanten '\$[$Section]{$val}' fehlgeschlagen:",
+#               $err
+#           );
+#           &abort();
+#       }
+#       # Sanity check (*MUST* be uppercase in order to avoid
+#       # clashes with lowercase tool-specific parameters!):
+#       unless (${$var} =~ m!^[A-Z][A-Z0-9]*(?:\|[A-Z][A-Z0-9]*)*$!)
+#       {
+#           Config::Manager::Report->report
+#           (
+#               $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
+#               __PACKAGE__ . "::BEGIN():",
+#               "Syntaxfehler in Konstante '\$[$Section]{$val}'!"
+#           );
+#           &abort();
+#       }
+#   }
+#   $match = "HOST=(?:$HOST_LIST)|LANG=(?:$LANG_LIST)|SRC=(?:$SRC_LIST)|OBJ=(?:$OBJ_LIST)|EXE=(?:$EXE_LIST)";
+#   ###########################################################################
+#   # The shortcuts below implement the following precedence rules:           #
+#   # (low) Config File << Environment Variable << Command Line Option (high) #
+#   ###########################################################################
+#   # Configuration Shortcuts Part 1:
+#   $index = 0;
+#   LOOP1:
+#   while ($index < @ARGV)
+#   {
+#       $param = \$ARGV[$index];
+#       if ($$param =~ m!^-(?:$match)(?:,(?:$match))*$!o)
+#       {
+#           splice(@ARGV,$index,1);
+#           while ($$param =~ m!($match)!go)
+#           {
+#               $sec = $1;
+#               ($var,$val) = split(/=/, $sec);
+#               $EnvHost = 0 if ($var eq 'HOST');
+#               $EnvLang = 0 if ($var eq 'LANG');
+#               splice(@ARGV,$index,0,"-D${Section}::$var=$val");
+#               $index++;
+#           }
+#           next LOOP1;
+#       }
+#       elsif ($$param =~ m!^-($HOST_LIST),($LANG_LIST),($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
+#       {
+#           $EnvHost = 0;
+#           $EnvLang = 0;
+#           splice(@ARGV,$index,1,
+#               "-D${Section}::HOST=$1",
+#               "-D${Section}::LANG=$2",
+#               "-D${Section}::SRC=$3",
+#               "-D${Section}::OBJ=$4",
+#               "-D${Section}::EXE=$5" );
+#           $index += 5;
+#           next LOOP1;
+#       }
+#       elsif ($$param =~ m!^-($LANG_LIST),($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
+#       {
+#           $EnvLang = 0;
+#           splice(@ARGV,$index,1,
+#               "-D${Section}::LANG=$1",
+#               "-D${Section}::SRC=$2",
+#               "-D${Section}::OBJ=$3",
+#               "-D${Section}::EXE=$4" );
+#           $index += 4;
+#           next LOOP1;
+#       }
+#       elsif ($$param =~ m!^-($SRC_LIST),($OBJ_LIST),($EXE_LIST)$!o)
+#       {
+#           splice(@ARGV,$index,1,
+#               "-D${Section}::SRC=$1",
+#               "-D${Section}::OBJ=$2",
+#               "-D${Section}::EXE=$3" );
+#           $index += 3;
+#           next LOOP1;
+#       }
+#       elsif ($$param =~ m!^-($HOST_LIST),($LANG_LIST)$!o)
+#       {
+#           $EnvHost = 0;
+#           $EnvLang = 0;
+#           splice(@ARGV,$index,1,
+#               "-D${Section}::HOST=$1",
+#               "-D${Section}::LANG=$2" );
+#           $index += 2;
+#           next LOOP1;
+#       }
+#       elsif ($$param =~ s!^-($LANG_LIST)$!-D${Section}::LANG=$1!o) { $EnvLang = 0; }
+#       elsif ($$param =~ m!^-D${Section}::LANG=(?:$LANG_LIST)$!o)   { $EnvLang = 0; }
+#       elsif ($$param =~ s!^-($HOST_LIST)$!-D${Section}::HOST=$1!o) { $EnvHost = 0; }
+#       elsif ($$param =~ m!^-D${Section}::HOST=(?:$HOST_LIST)$!o)   { $EnvHost = 0; }
+#       $index++;
+#   }
+#   ###########################################################################
+#   # Configuration Shortcuts Part 2:
+#   unshift( @ARGV, "-D${Section}::LANG=$1" )
+#       if ($EnvLang and
+#           (exists  $ENV{'COMPLANG'}) and
+#           (defined $ENV{'COMPLANG'}) and
+#           (        $ENV{'COMPLANG'}  =~  m!^($LANG_LIST)$!o));
+#   ###########################################################################
+#   # Configuration Shortcuts Part 3:
+#   unshift( @ARGV, "-D${Section}::HOST=$1" )
+#       if ($EnvHost and
+#           (exists  $ENV{'PLATFORM'}) and
+#           (defined $ENV{'PLATFORM'}) and
+#           (        $ENV{'PLATFORM'}  =~  m!^($HOST_LIST)$!o));
     ###########################################################################
     # Process "Define"s for configuration constants:
     $index = 0;
@@ -241,7 +242,7 @@ BEGIN # Global initialization
                 Config::Manager::Report->report
                 (
                     $TO_LOG,$LEVEL_INFO,
-                    "KONFIG: ${sec}::${var} = \"${val}\""
+                    "KONFIG: \$[$sec]{$var} = \"${val}\""
                 );
                 splice(@ARGV,$index,1); # remove option from command line
                 next LOOP2;
@@ -580,4 +581,5 @@ Der Exit-Code des Programms wird auf 1 gesetzt.
 =head1 HISTORY
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
+ 2003_02_14  Steffen Beyer                   Version 1.1
 

@@ -4,7 +4,8 @@
 ##    Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.                  ##
 ##    All rights reserved.                                                   ##
 ##                                                                           ##
-##    V 1.0 05.02.2003 Steffen Beyer & Gerhard Albers                        ##
+##    This package is free software; you can redistribute it                 ##
+##    and/or modify it under the same terms as Perl itself.                  ##
 ##                                                                           ##
 ###############################################################################
 
@@ -23,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.0';
+$VERSION = '1.1';
 
 1;
 
@@ -47,7 +48,7 @@ Config::Manager::*(3)
 
 =head1 VERSION
 
-This man page documents "Config::Manager" version 1.0.
+This man page documents "Config::Manager" version 1.1.
 
 =head1 AUTHORS
 
@@ -56,11 +57,15 @@ This man page documents "Config::Manager" version 1.0.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
-All rights reserved.
+ Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
+ All rights reserved.
 
 =head1 LICENSE
 
-Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
-All rights reserved.
+This package is free software; you can use, modify and redistribute
+it under the same terms as Perl itself, i.e., under the terms of
+the "Artistic License" or the "GNU General Public License".
+
+Please refer to the files "Artistic.txt" and "GNU_GPL.txt"
+in this distribution, respectively, for more details!
 

@@ -4,7 +4,8 @@
 ##    Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.                  ##
 ##    All rights reserved.                                                   ##
 ##                                                                           ##
-##    V 1.0 05.02.2003 Steffen Beyer & Gerhard Albers                        ##
+##    This package is free software; you can redistribute it                 ##
+##    and/or modify it under the same terms as Perl itself.                  ##
 ##                                                                           ##
 ###############################################################################
 
@@ -23,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.0';
+$VERSION = '1.1';
 
 BEGIN # Work-around for Bug in Net::Config 1.00 line# 40 under Win32
 {
@@ -291,4 +292,5 @@ normalen Beenden der Verbindung mit dem SMTP-Server.
 =head1 HISTORY
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
+ 2003_02_14  Steffen Beyer                   Version 1.1
 

@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.0
+                     Package "Config::Manager" Version 1.1
                    =========================================
 
 
@@ -7,10 +7,45 @@
                              All rights reserved.
 
 
+This package is available for download either from the web site at
+
+                  http://www.engelschall.com/u/sb/download/
+
+or from any CPAN (= "Comprehensive Perl Archive Network") mirror server:
+
+               http://www.perl.com/CPAN/authors/id/S/ST/STBEY/
+
+
+What's new in version 1.1:
+--------------------------
+
+ +  Added more documentation
+ +  Added missing license files
+ +  Added working example configuration files
+ +  Added another test file
+
+
+Legal issues:
+-------------
+
+This package with all its parts is
+
+Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.
+All rights reserved.
+
+This package is free software; you can use, modify and redistribute
+it under the same terms as Perl itself, i.e., under the terms of
+the "Artistic License" or the "GNU General Public License".
+
+Please refer to the files "Artistic.txt" and "GNU_GPL.txt"
+in this distribution, respectively, for more details!
+
+
 Prerequisites:
 --------------
 
-Perl version 5.000 or higher.
+Perl version 5.000 or higher, modules IO::File, File::Compare,
+File::Copy, Net::SMTP and MD5.
 
 
 Installation:
@@ -42,9 +77,32 @@ further reference in this process, where it can be accessed via the command
 If Perl is not currently available on your system, you can also read this
 documentation directly.
 
+Moreover, there is a short introduction given in file "Intro.txt", to which
+belong the two pictures "Bild1.jpg" and "Bild2.jpg".
+
 
 What does it do:
 ----------------
 
-(To be filled in yet)
+The objective of this module suite is to support configuration management.
 
+Please see the documentation (which is in German only, unfortunately) for
+more details (in particular file "Intro.txt").
+
+
+Author's note:
+--------------
+
+If you have any questions, suggestions or need any assistance, please
+let me know!
+
+Please do send feedback, this is essential for improving this module
+according to your needs!
+
+I hope you will find this module useful. Enjoy!
+
+Yours,
+--
+  Steffen Beyer <sb@engelschall.com> http://www.engelschall.com/u/sb/
+  "There is enough for the need of everyone in this world, but not
+   for the greed of everyone." - Mohandas Karamchand "Mahatma" Gandhi

@@ -4,7 +4,8 @@
 ##    Copyright (c) 2003 by Steffen Beyer & Gerhard Albers.                  ##
 ##    All rights reserved.                                                   ##
 ##                                                                           ##
-##    V 1.0 05.02.2003 Steffen Beyer & Gerhard Albers                        ##
+##    This package is free software; you can redistribute it                 ##
+##    and/or modify it under the same terms as Perl itself.                  ##
 ##                                                                           ##
 ###############################################################################
 
