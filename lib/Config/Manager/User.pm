@@ -25,12 +25,11 @@ require Exporter;
                    host_id
                    host_pw
                    machine_id
-                   SetTestMode
                );
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 use Config::Manager::Conf qw( whoami );
 use Config::Manager::Report qw(:all);
@@ -49,10 +48,6 @@ my @MACHINE  = ('DEFAULT', 'MACHINE');
 #######################
 
 my %ConfCache = ();
-
-my $TestDriverFlag = 0;
-
-my @TestDriverData = ("testfall", "Test Fall", "hostTT", "hostXXXX");
 
 ########################
 ## Private Functions: ##
@@ -75,7 +70,7 @@ sub _get_user_conf
         Config::Manager::Report->report
         (
             @ERROR,
-            "Benutzerkennung in der Umgebung nicht gefunden!"
+            "Couldn't find user login in %ENV!"
         );
         return undef;
     }
@@ -121,7 +116,7 @@ sub _get_user_conf
         Config::Manager::Report->report
         (
             @ERROR,
-"Fehler beim Ermitteln der Konfigurationsdaten fuer Benutzer '$userid':",
+"Error reading the configuration data for user '$userid':",
             $error
         );
         return undef;
@@ -138,10 +133,6 @@ sub user_id
 {
     my($user_id);
 
-    if ($TestDriverFlag)
-    {
-        return $TestDriverData[0];
-    }
     if (($user_id) = &whoami()) # defined in Conf.pm
     {
         return $user_id;
@@ -149,7 +140,7 @@ sub user_id
     Config::Manager::Report->report
     (
         @ERROR,
-        "Benutzerkennung in der Umgebung nicht gefunden!"
+        "Couldn't find user login in %ENV!"
     );
     return undef;
 }
@@ -158,10 +149,6 @@ sub user_name
 {
     my($conf,$user_name,$error);
 
-    if ($TestDriverFlag)
-    {
-        return $TestDriverData[1];
-    }
     if (@_ > 0)
     {
         return undef
@@ -180,7 +167,7 @@ sub user_name
     Config::Manager::Report->report
     (
         @ERROR,
-        "Benutzername in den Konfigurationsdaten nicht gefunden:",
+        "Couldn't find user's name in configuration data:",
         $error
     );
     return undef;
@@ -192,7 +179,7 @@ sub user_conf
     {
         return &_get_user_conf($_[0]);
     }
-    Config::Manager::Report->report(@FATAL, "Kein Benutzer angegeben!");
+    Config::Manager::Report->report(@FATAL, "No user specified!");
     return undef;
 }
 
@@ -200,10 +187,6 @@ sub host_id
 {
     my($conf,$host_id,$error);
 
-    if ($TestDriverFlag)
-    {
-        return $TestDriverData[2];
-    }
     if (@_ > 0)
     {
         return undef
@@ -222,7 +205,7 @@ sub host_id
     Config::Manager::Report->report
     (
         @ERROR,
-        "HOST-ID in den Konfigurationsdaten nicht gefunden:",
+        "Couldn't find user's HOST-ID in configuration data:",
         $error
     );
     return undef;
@@ -232,10 +215,6 @@ sub host_pw
 {
     my($conf,$host_pw,$error);
 
-    if ($TestDriverFlag)
-    {
-        return $TestDriverData[3];
-    }
     if (@_ > 0)
     {
         return undef
@@ -254,7 +233,7 @@ sub host_pw
     Config::Manager::Report->report
     (
         @ERROR,
-        "HOST-PW in den Konfigurationsdaten nicht gefunden:",
+        "Couldn't find user's HOST-PW in configuration data:",
         $error
     );
     return undef;
@@ -273,15 +252,10 @@ sub machine_id
     Config::Manager::Report->report
     (
         @ERROR,
-        "MACHINE-ID in den Konfigurationsdaten nicht gefunden:",
+        "Couldn't find MACHINE-ID in configuration data:",
         $error
     );
     return undef;
-}
-
-sub SetTestMode
-{
-    $TestDriverFlag = 1;
 }
 
 1;
@@ -336,9 +310,6 @@ In diesem Modul finden sich einige Routinen, um Informationen ueber den
 Benutzer des Programms (oder andere Benutzer) zu erhalten. Es stuetzt
 sich dabei auf das Modul "Config::Manager::Conf" ab.
 
-Im Testtreiber-Modus liefert das Modul immer die gleichen Benutzer-Daten,
-unabhaengig vom Aufrufer.
-
 =head1 ZUGANG & SICHERHEIT
 
 Dieses Modul setzt voraus, dass die Konfigurationsdateien von allen
@@ -384,23 +355,6 @@ C<%ConfCache>
 Speichert die Konfigurationsobjekte von verschiedenen Benutzern zwischen.
 Schluessel sind die User-Kennungen, Werte die Objekt-Referenzen von Instanzen
 von "Config::Manager::Conf".
-
-=item *
-
-C<$TestDriverFlag>
-
-Flag, ob Module von einem Testtreiber aus aufgerufen werden.
-
-Wenn das Flag gesetzt ist, wird ein fester Benutzer zurueckgeliefert,
-damit die Referenzdatei unabhaengig vom Aufrufer gueltig ist.
-
-=item *
-
-C<@TestDriverData>
-
-Benutzerdaten fuer den Testtreiber.
-
- Inhalt: ($user_id,$user_name,$host_id,$host_pw)
 
 =back
 
@@ -463,15 +417,6 @@ MACHINE-ID des momentanen Users bestimmen.
  Parameter: -
  Rueckgabe: MACHINE-ID  oder  undef
 
-=item *
-
-C<SetTestMode()>
-
-Modul arbeitet fortan im Testtreiber-Modus.
-
- Parameter: -
- Rueckgabe: -
-
 =back
 
 =head1 PRIVATE ROUTINEN
@@ -494,4 +439,5 @@ betreffenden Benutzers zurueck.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

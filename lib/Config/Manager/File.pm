@@ -40,7 +40,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 use Config::Manager::Base qw( $SCOPE );
 use Config::Manager::Conf;
@@ -1215,4 +1215,5 @@ into any given package you want.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

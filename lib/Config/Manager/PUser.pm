@@ -25,7 +25,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 ##############
 ## Imports: ##
@@ -60,16 +60,16 @@ BEGIN
     my($Section)      = 'Commandline';
     my($FAILED);
 
-    $FAILED = __PACKAGE__ . "::BEGIN(): Initialisierung fehlgeschlagen:";
+    $FAILED = __PACKAGE__ . "::BEGIN(): Initialization failed:";
     unless (defined ($current_user = &user_id()))
     {
         &ReportErrorAndExit( $FAILED ,
-"Konnte Kennung des Aufrufers nicht bestimmen!" );
+"Couldn't determine caller's login!" );
     }
     unless (defined ($current_conf = &user_conf($current_user)))
     {
         &ReportErrorAndExit( $FAILED ,
-"Konnte Konfigurations-Objekt des Aufrufers ($current_user) nicht anlegen!" );
+"Couldn't create caller's ($current_user) configuration object!" );
     }
     unless (defined ($default_user = $current_conf->get(@DEFAULT_USER)))
     {
@@ -77,13 +77,13 @@ BEGIN
         $error =~ s!\s+$!!;
         &ReportErrorAndExit(
             $FAILED,
-"Konnte Kennung des Projekt-Users nicht bestimmen:",
+"Couldn't determine project user's login:",
             $error );
     }
     unless (defined ($default_conf = &user_conf($default_user)))
     {
         &ReportErrorAndExit( $FAILED ,
-"Konnte Konfigurations-Objekt des Projekt-Users ($default_user) nicht anlegen!" );
+"Couldn't create project user's ($default_user) configuration object!" );
     }
     for $param (@CmdLineParms)
     {
@@ -93,7 +93,7 @@ BEGIN
             $error =~ s!\s+$!!;
             &ReportErrorAndExit(
                 $FAILED,
-"Konnte '\$${Section}::$param' des Aufrufers ($current_user) nicht bestimmen:",
+"Couldn't determine caller's ($current_user) " . Config::Manager::Conf::_name_($Section,$param) . ":",
                 $error );
         }
         unless (defined ($default_conf->set(__PACKAGE__,$Section,$param,$value)))
@@ -102,7 +102,7 @@ BEGIN
             $error =~ s!\s+$!!;
             &ReportErrorAndExit(
                 $FAILED,
-"Konnte '\$${Section}::$param' des Projekt-Users ($default_user) nicht setzen:",
+"Couldn't determine project user's ($default_user) " . Config::Manager::Conf::_name_($Section,$param) . ":",
                 $error );
         }
     }
@@ -182,4 +182,5 @@ passieren.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

@@ -46,7 +46,7 @@ $self =~ s!\.+(?:pl|bat|sh)$!!i;
 if (@ARGV > 1)
 {
     &Usage();
-    &ReportErrorAndExit("Falsche Anzahl von Parametern!");
+    &ReportErrorAndExit("Wrong number of parameters!");
 }
 
 if (@ARGV)
@@ -72,7 +72,7 @@ unless (defined ($list = $conf->get_all()))
     $line = Config::Manager::Conf->error();
     $line =~ s!\s+$!!;
     &ReportErrorAndExit(
-        "Fehler bei der Auswertung der Konfigurationsdaten:",
+        "Error while trying to read configuration data:",
         $line );
 }
 
@@ -98,13 +98,13 @@ sub Usage
 {
     print <<"VERBATIM";
 
-Aufruf:
+Usage:
 
   $self -h
   $self [<login>]
 
-  Listet saemtliche Konfigurationskonstanten des Aufrufers
-  oder des angegebenen Benutzers auf.
+  Lists all configuration constants of the specified
+  or the current user (i.e., the caller of this tool).
 
 VERBATIM
 }

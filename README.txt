@@ -1,5 +1,5 @@
                    =========================================
-                     Package "Config::Manager" Version 1.1
+                     Package "Config::Manager" Version 1.2
                    =========================================
 
 
@@ -16,13 +16,42 @@ or from any CPAN (= "Comprehensive Perl Archive Network") mirror server:
                http://www.perl.com/CPAN/authors/id/S/ST/STBEY/
 
 
-What's new in version 1.1:
+What's new in version 1.2:
 --------------------------
 
- +  Added more documentation
- +  Added missing license files
- +  Added working example configuration files
- +  Added another test file
+ Config::Manager::Conf:
+
+ +  Simplified and slightly corrected the code
+
+ Config::Manager::Report:
+
+ +  Does not automatically and forcibly produce
+    a stack trace for errors and fatal messages anymore
+ +  Now allows you to provide your own path and filename
+    for log files; the previous behaviour continues to
+    be the default if you don't
+ +  Added a running number to the generated filename
+    to make it unique even when log files are created
+    in rapid succession; also added the year number
+ +  Fixed some subtle bugs
+ +  Now returns error messages instead of dying
+ +  Now an inventory of all log files is kept which
+    allows to close them all reliably at shutdown time
+ +  Added a new "close()" method
+ +  Now uses "Symbol" instead of "IO::File" (should
+    therefore be slightly faster to load)
+
+ General:
+
+ +  Added the script "showconf.pl", a more versatile
+    replacement for "listconf.pl"
+ +  Changed all messages returned by this distribution
+    from German to English (the documentation continues
+    to be largely in German, though)
+ +  Removed obsolete test driver code
+ +  Changed "Makefile.PL" (IO::File => Symbol)
+ +  Changed the documentation accordingly
+ +  Changed the test suite accordingly
 
 
 Legal issues:

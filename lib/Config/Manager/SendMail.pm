@@ -24,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 BEGIN # Work-around for Bug in Net::Config 1.00 line# 40 under Win32
 {
@@ -69,7 +69,7 @@ sub Quit
         Config::Manager::Report->report
         (
             @WARN,
-            "Der SMTP-Server '$server' meldet einen Fehler beim Abmelden!"
+            "SMTP error while closing the connection to '$server'!"
         );
     }
 }
@@ -95,8 +95,8 @@ sub SendMail
         Config::Manager::Report->report
         (
             @ERROR,
-            "Kann keine Verbindung zu SMTP-Server '$server'",
-            "von Client '$client' aus aufbauen!"
+            "Can't connect to SMTP server '$server'",
+            "coming from client '$client'!"
         );
         return undef;
     }
@@ -107,7 +107,7 @@ sub SendMail
         Config::Manager::Report->report
         (
             @ERROR,
-            "Der SMTP-Server '$server' erkennt den Absender '$from' nicht an!"
+            "The SMTP server '$server' rejects sender '$from'!"
         );
         &Quit($smtp,$server);
         return undef;
@@ -121,7 +121,7 @@ sub SendMail
             Config::Manager::Report->report
             (
                 @ERROR,
-        "Der SMTP-Server '$server' erkennt den Empfaenger '$item' nicht an!"
+                "The SMTP server '$server' rejects recipient '$item'!"
             );
             &Quit($smtp,$server);
             return undef;
@@ -132,7 +132,7 @@ sub SendMail
         Config::Manager::Report->report
         (
             @ERROR,
-            "Der SMTP-Server '$server' meldet einen 'data'-Fehler!"
+            "SMTP 'data' error while talking to '$server'!"
         );
         &Quit($smtp,$server);
         return undef;
@@ -160,7 +160,7 @@ sub SendMail
             Config::Manager::Report->report
             (
                 @ERROR,
-"Der SMTP-Server '$server' meldet einen 'datasend'-Fehler in folgender Zeile:",
+"SMTP 'datasend' error while talking to '$server' in the following line:"
                 $item
             );
             &Quit($smtp,$server);
@@ -172,7 +172,7 @@ sub SendMail
         Config::Manager::Report->report
         (
             @ERROR,
-    "Der SMTP-Server '$server' meldet einen Fehler beim Ende der Uebertragung!"
+"SMTP error while terminating data transmission to '$server'!"
         );
         &Quit($smtp,$server);
         return undef;
@@ -293,4 +293,5 @@ normalen Beenden der Verbindung mit dem SMTP-Server.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

@@ -31,10 +31,10 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 use Config::Manager::Conf qw( whoami );
-use IO::File;
+use Symbol;
 
 #######################
 ## Public constants: ##
@@ -71,19 +71,19 @@ my @LOGFILEPATH  = ('DEFAULT', 'LOGFILEPATH');
 my @FULLNAME     = ('Person',  'Name');
 
 my $RULER   = '_' x 78 . "\n";
-my $HEADER  = 'PROTOKOLL';
-my $CMDLINE = 'KOMMANDO';
+my $HEADER  = 'STARTED';
+my $CMDLINE = 'COMMAND';
 my $LOGFILE = 'LOGFILE';
-my $FOOTER  = 'ENDE';
+my $FOOTER  = 'ENDED';
 
 my @LEADIN =
 (
-    [ 'AUFRUF',  'HINWEIS',  'WARNUNG',   'FEHLER', 'AUSNAHME'  ], # Singular
-    [ 'AUFRUFE', 'HINWEISE', 'WARNUNGEN', 'FEHLER', 'AUSNAHMEN' ]  # Plural
+    [ 'CALL',  'HINT',  'WARNING',  'ERROR',  'EXCEPTION'  ], # Singular
+    [ 'CALLS', 'HINTS', 'WARNINGS', 'ERRORS', 'EXCEPTIONS' ]  # Plural
 );
 
-my $LINE0 = 'Zeile auf Halde';
-my $LINE1 = 'Zeilen auf Halde';
+my $LINE0 = 'line on hold';
+my $LINE1 = 'lines on hold';
 
 my $STAT_MIN = 1;
 my $STAT_MAX = 4;
@@ -92,10 +92,16 @@ my $STARTDEPTH = 0;
 my $MAXEVALLEN = 0; # 0 = no limit
 
 #######################
-## Static variables: ##
+## Global variables: ##
 #######################
 
-my $singleton = 0;
+my($Singleton) = 0;
+
+my(@Inventory) = ();
+
+my($User) = (&whoami())[0] || '';
+
+my($Count) = 0;
 
 ########################
 ## Private functions: ##
@@ -151,23 +157,18 @@ sub _adjust # code "stolen" from Carp.pm:
 
 sub _ShortTime
 {
-    my($s,$m,$h,$day,$mon) = localtime(time);
-    return sprintf("%02d%02d-%02d%02d%02d", ++$mon,$day,$h,$m,$s);
+    my($s,$m,$h,$dd,$mm,$yy) = localtime(time);
+    $yy %= 100;
+    $mm++;
+    return sprintf("%02d%02d%02d-%02d%02d%02d", $yy,$mm,$dd,$h,$m,$s);
 }
 
 sub _LongTime
 {
-    my($s,$m,$h,$day,$mon);
-
-    if ($_[0]) # called by a test driver?
-    {
-        return "TT.MM. hh:mm:ss";
-    }
-    else
-    {
-        ($s,$m,$h,$day,$mon) = localtime(time);
-        return sprintf("%02d.%02d. %02d:%02d:%02d", $day,++$mon,$h,$m,$s);
-    }
+    my($s,$m,$h,$dd,$mm,$yy) = localtime(time);
+    $yy += 1900;
+    $mm = (qw(Jan Feb Mar Apr Mai Jun Jul Aug Sep Oct Nov Dec))[$mm];
+    return sprintf("%02d-%s-%d %02d:%02d:%02d", $dd,$mm,$yy,$h,$m,$s);
 }
 
 sub _which
@@ -177,28 +178,26 @@ sub _which
     if (ref $self) { return $self; }
     else
     {
-        unless (ref $singleton)
+        unless (ref $Singleton)
         {
-            $singleton = Config::Manager::Report->new();
-            $SIG{'__WARN__'} = \&_warn_;
-            $SIG{'__DIE__'}  = \&_die_;
+            if (ref ($Singleton = Config::Manager::Report->new()))
+            {
+                ${$Singleton}{'singleton'} = 1;
+                $SIG{'__WARN__'} = \&_warn_;
+                $SIG{'__DIE__'}  = \&_die_;
+            }
         }
-        return $singleton;
+        return $Singleton;
     }
 }
 
 sub DESTROY
 {
-    my($self) = @_;
-    my($file,$handle,$text,$item,$count);
+    my($self,$close) = @_;
+    my($text,$item,$count,$file,$handle);
 
-    $file = ${$self}{'file'};
-    $handle = ${$self}{'hand'};
-    if (${$self}{'flag'})
-    {
-        $self->report($TO_LOG+$TO_OUT,$LEVEL_INFO,"$LOGFILE = '$file'");
-    }
-    $text = "\n" . $RULER . "\n $FOOTER: " . _LongTime(${$self}{'test'});
+    return unless (ref $self and keys %{$self});
+    $text = "\n" . $RULER . "\n $FOOTER: " . _LongTime();
     for ( $item = $STAT_MIN; $item <= $STAT_MAX; $item++ )
     {
         if ((defined ($count = ${${$self}{'stat'}}[$item])) && ($count > 0))
@@ -215,12 +214,32 @@ sub DESTROY
         else             { $text .= $LINE1; }
     }
     $text .= "\n" . $RULER;
-    $self->report($TO_LOG,$LEVEL_INFO,$text);
-    unless ($handle->close())
+    $file   = ${$self}{'file'};
+    $handle = ${$self}{'hand'};
+    ${$self}{'level'} = $SHOW_ALL;
+    if (${$self}{'flag'})
     {
-        print STDERR __PACKAGE__ .
-            "::DESTROY(): Can't close logfile '$file': $!\n";
+        $self->report($TO_LOG+$TO_OUT,$LEVEL_INFO,"$LOGFILE = '$file'");
     }
+    $self->report($TO_LOG,$LEVEL_INFO,$text);
+    # Enable creation of new singleton object if necessary:
+    $Singleton = 0 if (${$self}{'singleton'});
+    # Prevent closing it again at global destruction time:
+    %{$self} = ();
+    $text = '';
+    unless (close($handle))
+    {
+        if ($close)
+        {
+            $text = __PACKAGE__ . "::close(): Can't close logfile '$file': $!";
+        }
+        else
+        {
+            $text = __PACKAGE__ . "::DESTROY(): Can't close logfile '$file': $!";
+            print STDERR "$text\n";
+        }
+    }
+    return $text;
 }
 
 END { &end(); }
@@ -233,14 +252,17 @@ sub end
 {
     $SIG{'__WARN__'} = 'DEFAULT';
     $SIG{'__DIE__'}  = 'DEFAULT';
-    $singleton = 0; # trigger destruction of singleton object if it exists
+    while (@Inventory)
+    {
+        pop(@Inventory)->DESTROY();
+    }
 }
 
 sub abort
 {
     &end();
     print STDERR @_ if @_;
-    print STDERR "<Programmabbruch>\n";
+    print STDERR "<Program aborted>\n";
     exit 1;
 }
 
@@ -250,15 +272,15 @@ sub abort
 
 sub singleton
 {
-    return _which($singleton); # trigger creation if necessary
+    return _which($Singleton); # trigger creation if necessary
 }
 
 sub new
 {
-    my($class,$tool,$path,$test) = @_;
-    my($err,$self,$file,$handle,$user,$name,$time,$text);
+    my($class,$tool,$path,$file) = @_;
+    my($err,$handle,$user,$name,$self,$time,$text);
 
-    local($_);
+    local($_); # because of map()
     $class = ref($class) || $class || __PACKAGE__;
     unless (defined $tool && $tool !~ /^\s*$/)
     {
@@ -272,46 +294,45 @@ sub new
         {
             $err = Config::Manager::Conf->error();
             $err =~ s!\s+$!!;
-            &abort(__PACKAGE__ .
-                "::new(): Can't find log directory in configuration data: $err\n");
+            return(__PACKAGE__ .
+                "::new(): Can't find log directory in configuration data: $err");
         }
     }
     $path =~ s![/\\]+$!!;
-    if (defined $test && $test) # we've been called by a test driver
+    unless (-d $path)
     {
-        $test = 1;
-        $file = $path;
+        return(__PACKAGE__ .
+            "::new(): Log directory '$path' does not exist!");
     }
-    else # normal operation
+    if (defined $file && $file !~ /^\s*$/)
     {
-        $test = 0;
-        unless (-d $path)
-        {
-            &abort(__PACKAGE__ .
-                "::new(): Log directory '$path' does not exist!\n");
-        }
+        $file="$path/$file";
+    }
+    else # supply one
+    {
+        $Count++;
         $path .= "/$tool";
-        $file = "$path/$tool-" . _ShortTime . "-$$.log";
+        $file = "$path/$tool-" . _ShortTime() . "-$$-$Count.log";
         unless (-d $path)
         {
             unless (mkdir($path, 0777))
             {
-                &abort(__PACKAGE__ .
-                    "::new(): Can't create log directory '$path': $!\n");
+                return(__PACKAGE__ .
+                    "::new(): Can't create log directory '$path': $!");
             }
         }
     }
-    unless (defined ($handle = IO::File->new(">$file")))
+    $handle = gensym();
+    unless (open($handle, ">$file"))
     {
-        &abort(__PACKAGE__ .
-            "::new(): Can't open logfile '$file': $!\n");
+        return(__PACKAGE__ .
+            "::new(): Can't open logfile '$file': $!");
     }
-    $handle->autoflush(1);
-    $user = (&whoami())[0] || '';
+    select( ( select($handle), $| = 1 )[0] );
+    $user = $User;
     $name = Config::Manager::Conf->get(@FULLNAME) || '';
     $self = { };
     bless($self, $class);
-    ${$self}{'test'} = $test; # flag for "called by a test driver"
 #   ${$self}{'user'} = $user;
 #   ${$self}{'name'} = $name;
 #   ${$self}{'tool'} = $tool;
@@ -338,7 +359,7 @@ sub new
             $user = $name;
         }
     }
-    $time = _LongTime($test);
+    $time = _LongTime();
     $text =
         $RULER .
         "\n $HEADER: $tool - $time - $user\n" .
@@ -346,9 +367,19 @@ sub new
         "\n $CMDLINE: " .
         join(' ', map("'$_'", $^X, $0, @ARGV)) .
         "\n";
-    $self->report($TO_LOG,$LEVEL_INFO,$text); # increments counter
-    ${$self}{'stat'} = [ ]; # reset counters to zero
+    $self->report($TO_LOG,$LEVEL_INFO,$text); # increments stat counters
+    ${$self}{'stat'} = [ ];                   # reset stat counters to zero
+    push( @Inventory, $self );
     return $self;
+}
+
+sub close
+{
+    my($self) = _which(shift);
+
+    return __PACKAGE__ . "::close(): invalid logfile object!"
+        unless (ref $self and keys %{$self});
+    return $self->DESTROY(1);
 }
 
 sub report
@@ -356,10 +387,10 @@ sub report
     my($self)    = _which(shift);
     my($command) = shift || 0;
     my($level)   = shift || 0;
-    my($text,$leadin,$indent,$item,$handle);
-    my($depth,$sub,$file,$line);
+    my($text,$leadin,$indent,$item,$depth,$sub,$file,$handle);
     my(@stack,@trace);
 
+    return unless (ref $self and keys %{$self});
     if ($command & $FROM_HOLD)
     {
         return if ($command == $FROM_HOLD + $TO_HLD);
@@ -388,11 +419,10 @@ sub report
             $item .= "\n";
             $leadin = $indent;
         }
-        $depth = $STARTDEPTH;
-        if ((($level & $STACKTRACE) || (($level >> 2) >= ($LEVEL_ERROR >> 2))) &&
-            (!${$self}{'test'}))
+        @trace = ();
+        if ($level & $STACKTRACE)
         {
-            @trace = ();
+            $depth = $STARTDEPTH;
             while (@stack = caller($depth++))
             {
                 $sub = _adjust(@stack);
@@ -403,40 +433,47 @@ sub report
                     $indent . "called at $stack[1] line $stack[2]\n"
                 );
             }
-####        if ($level & $STACKTRACE)     #
-####        {                             # Comment this out if stack
-####            $depth = $STARTDEPTH;     # traces are to appear in
-####            push( @{$text}, @trace ); # the log file ONLY!
-####        }                             #
+            # Comment out next line if stack traces in log file ONLY:
+####        push( @{$text}, @trace );
         }
     }
     if ($command & $TO_LOG)
     {
+        $file   = ${$self}{'file'};
         $handle = ${$self}{'hand'};
-        print $handle join('', @{$text});
-        print $handle join('', @trace) if ($depth > $STARTDEPTH);
-
+####    unless (print $handle join('', @{$text}))         # use this if push above is enabled
+        unless (print $handle join('', @{$text}, @trace)) # use this if push above is disabled
+        {
+            unshift( @{$text}, __PACKAGE__ . "::report(): Can't print logfile '$file': $!\n" );
+            $command |= $TO_HLD;
+            $command |= $TO_ERR;
+        }
     }
     if ($command & $TO_ERR)
     {
-        print STDERR join('', @{$text});
+        unless (print STDERR join('', @{$text}))
+        {
+            $command |= $TO_OUT;
+        }
     }
     if ($command & $TO_OUT)
     {
-        print STDOUT join('', @{$text});
+        unless (print STDOUT join('', @{$text}))
+        {
+            $command |= $TO_HLD;
+        }
     }
     if ($command & $TO_HLD)
     {
         unless ($command & $FROM_HOLD)
         {
-            push( @{${$self}{'hold'}}, @{$text} );
-            # Comment out next line if stack traces in log file ONLY:
-####        push( @{${$self}{'hold'}}, @trace ) if ($depth > $STARTDEPTH);
+####        push( @{${$self}{'hold'}}, @{$text} );         # use this if push above is enabled
+            push( @{${$self}{'hold'}}, @{$text}, @trace ); # use this if push above is disabled
         }
     }
     if ($command & $FROM_HOLD)
     {
-        ${$self}{'hold'} = [ ];
+        ${$self}{'hold'} = [ ] unless ($command & $TO_HLD);
     }
     else
     {
@@ -450,8 +487,9 @@ sub trace
     my($first,$depth,$sub,$item);
     my(@stack,@trace,@args);
 
-    # Do nothing if test driver or trace unwanted:
-    return if (${$self}{'test'} || ($LEVEL_TRACE < ${$self}{'level'}));
+    return unless (ref $self and keys %{$self});
+    # Do nothing if trace unwanted:
+    return if ($LEVEL_TRACE < ${$self}{'level'});
     $first = 1;
     $depth = 1;
     @trace = (); # code "borrowed" from Carp.pm:
@@ -495,8 +533,10 @@ sub trace
 sub level
 {
     my($self) = _which(shift);
-    my($level) = ${$self}{'level'};
+    my($level);
 
+    return undef unless (ref $self and keys %{$self});
+    $level = ${$self}{'level'};
     if (@_ > 0)
     {
         ${$self}{'level'} = $_[0] + 0;
@@ -508,26 +548,17 @@ sub logfile
 {
     my($self) = _which(shift);
 
+    return undef unless (ref $self and keys %{$self});
     return ${$self}{'file'};
-}
-
-sub test
-{
-    my($self) = _which(shift);
-    my($test) = ${$self}{'test'};
-
-    if (@_ > 0)
-    {
-        ${$self}{'test'} = ($_[0] ? 1 : 0);
-    }
-    return $test;
 }
 
 sub notify # set flag for notifying user at exit about where logfile lies
 {
     my($self) = _which(shift);
-    my($flag) = ${$self}{'flag'};
+    my($flag);
 
+    return undef unless (ref $self and keys %{$self});
+    $flag = ${$self}{'flag'};
     if (@_ > 0)
     {
         ${$self}{'flag'} = ($_[0] ? 1 : 0);
@@ -541,10 +572,12 @@ sub ret_hold
 
     if (defined wantarray && wantarray)
     {
+        return () unless (ref $self and keys %{$self});
         return (@{${$self}{'hold'}});
     }
     else
     {
+        return undef unless (ref $self and keys %{$self});
         return scalar(@{${$self}{'hold'}});
     }
 }
@@ -553,6 +586,7 @@ sub clr_hold
 {
     my($self) = _which(shift);
 
+    return unless (ref $self and keys %{$self});
     ${$self}{'hold'} = [ ];
 }
 
@@ -568,8 +602,8 @@ Config::Manager::Report - Error Reporting and Logging Module
 
   use Config::Manager::Report qw(:all);
 
-  $logobject = Config::Manager::Report->new([TOOL[,PATH[,TEST]]]);
-  $newlogobject = $logobject->new([TOOL[,PATH[,TEST]]]);
+  $logobject = Config::Manager::Report->new([TOOL[,PATH[,FILE]]]);
+  $newlogobject = $logobject->new([TOOL[,PATH[,FILE]]]);
 
   $default_logobject = Config::Manager::Report->singleton();
 
@@ -596,9 +630,6 @@ Config::Manager::Report - Error Reporting and Logging Module
 
   [ $oldlevel = ] $logobject->level([NEWLEVEL]);
   [ $oldlevel = ] Config::Manager::Report->level([NEWLEVEL]);
-
-  [ $oldflag = ] $logobject->test([NEWFLAG]);
-  [ $oldflag = ] Config::Manager::Report->test([NEWFLAG]);
 
   [ $oldflag = ] $logobject->notify([NEWFLAG]);
   [ $oldflag = ] Config::Manager::Report->notify([NEWFLAG]);
@@ -750,7 +781,7 @@ verwenden; der Aufruf als Funktion ist jedoch etwas schneller.
 
 =item *
 
-C<private $self-E<gt>DESTROY()>
+C<private $self-E<gt>DESTROY([$close])>
 
 In dieser Methode werden Aktionen definiert, die beim "Tod" eines Log-Objekts
 (typischerweise bei Beendigung des Programms, im Rahmen der Global
@@ -760,12 +791,18 @@ Destruction) noch durchgefuehrt werden muessen. Dazu gehoeren:
   - Den Footer der Logdatei schreiben
   - Logdatei schliessen
 
- Parameter: $self - Referenz auf das zu zerstoerende Objekt
+ Parameter: $self  - Referenz auf das zu zerstoerende Objekt
+            $close - Optional; ein "true"-Wert, falls von
+                     "close()" aufgerufen
 
- Rueckgabe: -
+ Rueckgabe: Text der Fehlermeldung falls close(FILEHANDLE)
+            nicht erfolgreich, Leerstring falls alles OK
 
-Diese Funktion wird implizit von Perl aufgerufen und darf nicht explizit
-aufgerufen werden.
+Diese Methode wird implizit von Perl aufgerufen und sollte nicht
+explizit aufgerufen werden.
+
+Statt dessen sollte bei Bedarf die Methode "close()" verwendet
+werden (die ihrerseits "DESTROY()" aufruft).
 
 =item *
 
@@ -779,37 +816,24 @@ waren.
 Dies ist notwendig, um Endlos-Rekursionen im Zusammenhang mit "DESTROY()"
 zu vermeiden.
 
-Ausserdem wird hier die Aufloesung des Singleton-Log-Objekts (d.h. der Aufruf
-von "DESTROY()" fuer dieses Objekt) getriggert, falls es waehrend des
-Programmlaufs erzeugt wurde.
+Ausserdem wird hier die Aufloesung aller Log-Objekte (d.h. der Aufruf
+von "DESTROY()" fuer alle diese Objekte) getriggert, d.h. die Log-
+Objekte werden geschlossen (zuvor wird noch ein Footer in die Datei
+geschrieben).
 
-Ohne diese explizite Triggerung der Zerstoerung des Singleton-Objekts wuerde
+Ohne diese explizite Triggerung der Zerstoerung der Log-Objekte wuerde
 es zu Fehlern (Footer nicht geschrieben, Datei nicht ordnungsgemaess
-geschlossen) kommen.
+geschlossen) bei der Global Destruction kommen.
 
-Dies kann ggfs. auch mit anderen Log-Objekten passieren, falls die letzte
-auf sie zeigende Referenz nicht schon B<VOR> der Global Destruction
-zurueckgegeben (geloescht) wurde. Man sollte daher die letzte Referenz
-auf ein Log-Object z.B. in einer "END"-Routine explizit zuruecksetzen
-(z.B. durch Ueberschreiben der Referenz durch einen konstanten Skalar),
-falls das nicht automatisch und vorher schon durch das Verlassen
-des Scopes (des umschliessenden Code-Blocks in geschweiften Klammern)
-der Variablen mit der Referenz geschehen ist.
-
-Damit diese Triggerung funktioniert, duerfen zum Zeitpunkt des Aufrufs von
-"END()" im Programm keine Kopien der Referenz auf das Singleton-Objekt mehr
-existieren. Mit anderen Worten, der Rueckgabewert der Methode "singleton()"
-darf im Programm nicht dauerhaft gespeichert werden.
-
-(Die "singleton()"-Methode sollte sowieso normalerweise NICHT verwendet
-werden!)
+Die Zerstoerung aller Log-Objekte erfolgt in umgekehrter Reihenfolge
+ihrer Erzeugung.
 
  Parameter: -
 
  Rueckgabe: -
 
-Diese Funktion wird implizit von Perl aufgerufen (durch die Funktion "END")
-und sollte im Normalfall nicht explizit verwendet werden.
+Diese Funktion wird implizit von Perl aufgerufen (durch die Funktion
+"END") und sollte im Normalfall nicht explizit verwendet werden.
 
 =item *
 
@@ -818,12 +842,11 @@ C<reserved &abort()>
 Diese Funktion bricht die Programmausfuehrung ab.
 
 Zuvor wird die Funktion "&end()" aufgerufen, um die Signal-Handler fuer
-"die" und "warn" zurueckzusetzen und ggfs. die Default-Log-Datei zu
-schliessen.
+"die" und "warn" zurueckzusetzen und ggfs. alle Log-Dateien zu schliessen.
 
 Anschliessend werden die als Parameter mitgegebenen Zeilen Text auf STDERR
-ausgegeben, gefolgt von der Zeile "<Programmabbruch>"; zuletzt wird dann die
-Ausfuehrung des Programms beendet.
+ausgegeben, gefolgt von der Zeile "<Program aborted>"; zuletzt wird dann
+die Ausfuehrung des Programms beendet.
 
  Parameter: Beliebig viele Zeilen Fehlermeldung (oder keine)
             (MIT Newlines ("\n") wo gewuenscht!)
@@ -857,19 +880,22 @@ existiert (genauer gesagt alle Objekt-Methoden, in denen auf den Parameter
  Parameter: -
 
  Rueckgabe: Gibt eine Referenz auf das Singleton-Objekt zurueck
+            oder einen String mit einer Fehlermeldung, falls das
+            Singleton-Objekt nicht erzeugt werden konnte
 
 Falls das Singleton-Objekt noch nicht existiert, wird es durch diesen Aufruf
 erzeugt.
 
 "C<Config::Manager::Report-E<gt>methode();>" ist dabei dasselbe wie
 "C<Config::Manager::Report-E<gt>singleton()-E<gt>methode();>" oder wie
-"C<$singleton = Config::Manager::Report-E<gt>singleton();>" und
-"C<$singleton-E<gt>methode();>".
+"C<$Singleton = Config::Manager::Report-E<gt>singleton();>" und
+"C<$Singleton-E<gt>methode();>".
 
 Es sollte jedoch immer die erste dieser Formen
 ("C<Config::Manager::Report-E<gt>methode();>") verwendet werden. Ausserdem darf der
 Rueckgabewert dieser Methode nicht dauerhaft im Programm gespeichert werden,
-da sonst das automatische Schliessen der Logdatei nicht funktioniert.
+da es sonst zu Fehlern kommen kann, wenn die Log-Datei inzwischen woanders
+geschlossen wurde.
 
 Es gibt im Grunde nur eine einzige sinnvolle Verwendung fuer diese Methode,
 naemlich, um die Erzeugung des Singleton-Objekts auszuloesen (wie das
@@ -877,29 +903,57 @@ beispielsweise in "Config::Manager::Base.pm" geschieht).
 
 =item *
 
-C<public $class-E<gt>new([$tool[,$path[,$test]]])>
+C<public $class-E<gt>new([$tool[,$path[,$file]]])>
 
 Bei Aufruf - in der Regel bei Toolstart - wird das Logfile angelegt. Ist das
-Logverzeichnis nicht vorhanden, so wird auch dieses angelegt.
+Logverzeichnis nicht angegeben und das automatisch gewaehlte Logverzeichnis
+nicht vorhanden, so wird auch dieses angelegt (jedoch nur die letzte Ebene).
 
 Danach wird der Header des Logfiles geschrieben. Dieser enthaelt z.B. Uhrzeit,
 Namen des Aufrufers und Kommandoaufruf samt Optionen.
 
- Parameter: $class - Name der Klasse oder Objekt derselben Klasse wie Neues
+ Parameter: $class - Name der Klasse oder ein Objekt derselben Klasse
             $tool  - Optional; wird kein Toolname uebergeben, so wird er
                      in der Funktion ermittelt
             $path  - Optional; wird kein Logpfad angegeben, so wird er aus
                      der Konfiguration ausgelesen
-            $test  - Optional; hier kann eingestellt werden, dass man sich
-                     im Testtreibermodus befindet. Abhaengig davon werden
-                     manche Aktionen im Ablauf anders behandelt, z.B. fuer
-                     Regressionstests die Angabe eines Einheitsdatums.
+            $file  - Optional; wird kein Dateiname angegeben, wird
+                     automatisch einer vergeben
 
- Rueckgabe: -
+ Rueckgabe: Eine Referenz auf das neue erzeugte Objekt, falls das
+            Oeffnen der Log-Datei und das Schreiben des Headers
+            in diese Log-Datei geklappt hat, ansonsten (bei einem
+            Fehler) ein String mit der entsprechenden Fehlermeldung
 
 Diese Methode muss (d.h. darf) nicht explizit aufgerufen werden, falls man nur
 die Default-Logdatei ("Singleton-Log-Objekt") verwenden will (in diesem Fall
 ist statt dessen die Methode "singleton()" zu verwenden).
+
+=item *
+
+C<public $self-E<gt>close()>
+
+Diese Methode schliesst die Log-Datei, die zu dem angegebenen Objekt
+gehoert, und schreibt zuvor noch einen Footer (mit Datum, Uhrzeit
+sowie einer kleinen Ausgabestatistik) in die Datei.
+
+Bei einem Fehler wird ein String mit der entsprechenden Fehlermeldung
+zurueckgeliefert, ansonsten der leere String.
+
+ Parameter: -
+
+ Rueckgabe: Ein Leerstring bei Erfolg, ein String mit der
+            entsprechenden Fehlermeldung bei einem Fehler
+
+Diese Methode kann auch fuer das Singleton-Objekt als Klassenmethode
+aufgerufen werden:
+
+    Config::Manager::Report->close();
+
+In diesem Fall wird das Singleton-Objekt geloescht, so dass
+ein erneuter Aufruf von Klassenmethoden aus dieser Klasse
+automatisch ein neues Singleton-Objekt erzeugt (und eine
+neue Log-Datei mit neuem Namen).
 
 =item *
 
@@ -920,7 +974,7 @@ Loggingkonzept. Meldungen werden auf Anforderung entsprechend eingerueckt.
                             $TO_HLD $TO_OUT $TO_ERR $TO_LOG
                             $FROM_HOLD $USE_LEADIN $STACKTRACE
                         Diese Werte koennen beliebig durch Addition
-                        kombiniert werden.
+                        oder Bit-Or ("|") kombiniert werden.
             $level    - Auf welcher Stufe ist die Meldung einzuordnen:
                             $LEVEL_TRACE $LEVEL_INFO $LEVEL_WARN
                             $LEVEL_ERROR $LEVEL_FATAL
@@ -952,6 +1006,13 @@ Ausgabe) geloescht, ausser bei einem Kommando wie
     Config::Manager::Report->report($FROM_HOLD+$TO_HLD);
 
 welches (da sinnlos) vollstaendig ignoriert wird.
+
+Es ist auch moeglich, ein Kommando wie z.B.
+
+    Config::Manager::Report->report($FROM_HOLD+$TO_HLD+$TO_ERR);
+
+anzugeben, hier wird die Halde auf STDERR ausgegeben aber NICHT
+geloescht.
 
 Die Methode zaehlt automatisch die Anzahl der Meldungen, die auf jedem Level
 ausgegeben wurden, mit - unabhaengig davon, auf welchem Kanal (STDOUT, STDERR,
@@ -1040,21 +1101,6 @@ Gibt den Namen und Pfad der Logdatei des betreffenden Log-Objekts zurueck.
 
 =item *
 
-C<public $self-E<gt>test([$value])>
-
-Gibt den bisherigen Wert des Flags zurueck, das angibt, ob man sich im
-Testtreiber-Modus befindet. Kann auch dazu verwendet werden, dieses Flag zu
-setzen oder zu loeschen, falls im Aufruf ein Wert angegeben wurde.
-
- Parameter: $self     - Referenz auf Log-Objekt oder Klassenname
-            (Es wird das Singleton-Objekt verwendet, falls die Methode
-            als Klassen- und nicht als Objekt-Methode aufgerufen wurde)
-            $value    - Optional der neue Wert
-
- Rueckgabe: Es wird immer der bisherige Wert zurueckgeliefert.
-
-=item *
-
 C<public $self-E<gt>notify([$value])>
 
 Gibt den bisherigen Wert des Flags zurueck, das angibt, ob bei Programmende
@@ -1109,4 +1155,5 @@ Loescht die Halde des betreffeden Objekts.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

@@ -29,7 +29,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 use Config::Manager::Conf;
 use Config::Manager::Report qw(:all);
@@ -42,9 +42,9 @@ BEGIN # Global initialization
 {
     my($self) = __PACKAGE__;
     my($depth,$caller,$index,$param,$match,$sec,$var,$val,$err);
-    my($HOST_LIST,$LANG_LIST,$SRC_LIST,$OBJ_LIST,$EXE_LIST);
-    my(@Refs) = (\$HOST_LIST,\$LANG_LIST,\$SRC_LIST,\$OBJ_LIST,\$EXE_LIST );
-    my(@Names) = qw( HOST_LIST LANG_LIST SRC_LIST  OBJ_LIST  EXE_LIST );
+    my             (  $HOST_LIST, $LANG_LIST, $SRC_LIST, $OBJ_LIST, $EXE_LIST );
+    my(@Refs)  =   ( \$HOST_LIST,\$LANG_LIST,\$SRC_LIST,\$OBJ_LIST,\$EXE_LIST );
+    my(@Names) = qw(   HOST_LIST   LANG_LIST   SRC_LIST   OBJ_LIST   EXE_LIST );
     my($Section) = "Commandline";
     my($EnvHost) = 1;
     my($EnvLang) = 1;
@@ -68,21 +68,27 @@ BEGIN # Global initialization
     }
     if ($SCOPE eq $NONE)
     {
-        warn "WARNUNG: Konnte den 'scope' des Aufrufers nicht bestimmen!\n";
+        warn "WARNING: Couldn't determine the caller's \"scope\" (assuming '$NONE')!\n";
     }
     unless (defined (Config::Manager::Conf->init( $SCOPE )))
     {
         $err = Config::Manager::Conf->error();
         $err =~ s!\s+$!!;
         &abort( __PACKAGE__ .
-            "::BEGIN(): Globale Initialisierung fehlgeschlagen:\n$err\n" );
+            "::BEGIN(): Global initialization failed:\n$err\n" );
     }
     ###########################################################################
     # Install signal handlers for common signals:
     $SIG{'INT'} = 'IGNORE'; # Ignore Ctrl-C (important for closing log file!)
     ###########################################################################
-    # Initialize logging module and log file:
-    Config::Manager::Report->singleton(); # trigger creation of singleton object
+    # Initialize logging module and log file (trigger creation of singleton object):
+    unless (ref ($err = Config::Manager::Report->singleton()))
+    {
+        $err =~ s!\s+$!!;
+        &abort( __PACKAGE__ .
+            "::BEGIN(): Global initialization failed:\n$err\n" );
+    }
+    $err = '';
     Config::Manager::Report->notify(1); # in case this should be the default
     ###########################################################################
 #   # Read configuration constants for command line option processing:
@@ -98,7 +104,8 @@ BEGIN # Global initialization
 #           (
 #               $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
 #               __PACKAGE__ . "::BEGIN():",
-#   "Ermitteln der Konstanten '\$[$Section]{$val}' fehlgeschlagen:",
+#               "Couldn't get the value of configuration constant " .
+#               Config::Manager::Conf::_name_($Section,$val) . ":",
 #               $err
 #           );
 #           &abort();
@@ -111,7 +118,9 @@ BEGIN # Global initialization
 #           (
 #               $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
 #               __PACKAGE__ . "::BEGIN():",
-#               "Syntaxfehler in Konstante '\$[$Section]{$val}'!"
+#               "Syntax error in configuration constant " .
+#               Config::Manager::Conf::_name_($Section,$val) .
+#               " (must be UPPERCASE and '|'-separated)!"
 #           );
 #           &abort();
 #       }
@@ -234,7 +243,8 @@ BEGIN # Global initialization
                     (
                         $TO_LOG+$TO_ERR,$LEVEL_FATAL+$USE_LEADIN,
                         __PACKAGE__ . "::BEGIN():",
-        "Setzen der Konstanten '\$[$sec]{$var}' fehlgeschlagen:",
+                        "Couldn't set the value of configuration constant " .
+                        Config::Manager::Conf::_name_($sec,$var) . ":",
                         $err
                     );
                     &abort();
@@ -242,7 +252,7 @@ BEGIN # Global initialization
                 Config::Manager::Report->report
                 (
                     $TO_LOG,$LEVEL_INFO,
-                    "KONFIG: \$[$sec]{$var} = \"${val}\""
+                    "OVERRIDE: " . Config::Manager::Conf::_name_($sec,$var) . " = \"${val}\""
                 );
                 splice(@ARGV,$index,1); # remove option from command line
                 next LOOP2;
@@ -274,8 +284,8 @@ sub ReportErrorAndExit
     {
         Config::Manager::Report->report(
             $TO_LOG+$TO_ERR,$LEVEL_ERROR+$USE_LEADIN,
-            "Programmabbruch ohne Fehlermeldung -",
-            "siehe Log-Datei fuer moegliche Ursachen!" );
+            "Program abortion without error message -",
+            "see log file for possible causes!" );
         Config::Manager::Report->notify(1); # print location of log file if possible
     }
     &abort();
@@ -286,7 +296,6 @@ sub GetList
     my($conf,$item,$value,$error);
     my(@list);
 
-    local($_);
     if ((@_ > 0) && (ref($_[0]) eq 'Config::Manager::Conf'))
         { $conf = shift; }
     else
@@ -307,9 +316,8 @@ sub GetList
                 Config::Manager::Report->report
                 (
                     @ERROR,
-                    "Konfigurations-Parameter (" .
-                    join(', ', map("'$_'", @{$item})) .
-                    ") in Konfiguration nicht gefunden:",
+                    "Couldn't get the value of configuration constant " .
+                    Config::Manager::Conf::_name_(@{$item}) . ":",
                     $error
                 );
                 return ();
@@ -320,7 +328,7 @@ sub GetList
             Config::Manager::Report->report
             (
                 @FATAL,
-        "Parameter '$item' ist keine gueltige ARRAY-Referenz (Programmfehler)"
+        "Parameter '$item' is not a valid ARRAY reference (internal program error)"
             );
             return ();
         }
@@ -582,4 +590,5 @@ Der Exit-Code des Programms wird auf 1 gesetzt.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

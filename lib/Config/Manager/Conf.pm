@@ -26,7 +26,7 @@ require Exporter;
 
 @EXPORT_OK = qw( whoami );
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 ################################################################################
 # Datenstrukturen
@@ -64,6 +64,9 @@ my $CACHED   = 3;
 # Sonstige Konstanten
 my $NONE     = 'NONE';
 
+my $SYNTAX   = 'Syntax error';
+my $INFINITE = 'Infinite recursion';
+
 my $anchor;
 
 my $default = Config::Manager::Conf->new();
@@ -90,13 +93,13 @@ sub whoami
 sub add {
     my $self = shift;
     ref($self) || ($self = $default);
-    local($_);
+    local($_); # because of foreach
     foreach (@_) {
         next if (!(-r $_) && /$PRIVATE/io);
-        open(FILE, $_) || return $self->_error("Datei '$_' nicht gefunden oder nicht lesbar:\n$!");
+        open(FILE, $_) || return $self->_error("Unable to open file '$_':\n$!");
         my @lines = <FILE>;
-        close(FILE) || return $self->_error("Konnte Datei '$_' nicht schliessen:\n$!");
-        $self->_add($_, @lines) || return undef;
+        close(FILE) || return $self->_error("Unable to close file '$_':\n$!");
+        $self->_add($_, \@lines) || return undef;
     }
     return 1;
 }
@@ -118,6 +121,7 @@ sub get {
     my $section = pop || $DEFAULT;
     my $state = $$self{$section}{$key}{'state'};
     my $value;
+    local($@); # because of eval{}; and parse()
     unless ($state) {
         return $ENV{$key} if $section eq $ENV && defined $ENV{$key};
         if ($section eq $SPECIAL &&
@@ -126,7 +130,6 @@ sub get {
                 return $self->_error( _not_found_($SPECIAL,$WHOAMI) );
             }
             return $value if $key eq $WHOAMI;
-            local($@);
             {
                 local($SIG{'__DIE__'}) = 'DEFAULT';
                 eval {
@@ -134,9 +137,10 @@ sub get {
                 };
             }
             if ($@) {
-                $@ =~ s!\s+$!!;
-                $@ .= " on this platform" if ($@ =~ s!\s+at\s+\S.+$!!);
-                return $self->_error($@);
+                $value = $@;
+                $value =~ s!\s+$!!;
+                $value .= " on this platform" if ($value =~ s!\s+at\s+\S.+$!!);
+                return $self->_error($value);
             }
             return $value if defined $value;
         }
@@ -145,16 +149,22 @@ sub get {
     $value = $$self{$section}{$key}{'value'};
     return $value if $state == $CACHED;
     if ($state == $PENDING) {
-        my $text   = "\$[$section]{$key} = \"$value\"";
+        my $text   = _name_($section,$key) . " = \"$value\"";
         my $source = $$self{$section}{$key}{'source'};
         my $line   = $$self{$section}{$key}{'line'};
-        return $self->_error('Endlosrekursion', $text, $section, $source, $line);
+        return $self->_error($INFINITE, $text, $section, $source, $line);
     }
     $$self{$section}{$key}{'state'} = $PENDING;
-    $value = $self->parse($value, $section);
-    $$self{$section}{$key}{'value'} = $value if defined $value;
-    $$self{$section}{$key}{'state'} = defined $value ? $CACHED : $RAW;
-    return $value;
+    if (defined ($value = $self->parse($value, $section))) {
+        $$self{$section}{$key}{'value'} = $value;
+        $$self{$section}{$key}{'state'} = $CACHED;
+        return $value;
+    }
+    else {
+        $$self{'<error>'} = $@;
+        $$self{$section}{$key}{'state'} = $RAW;
+        return undef;
+    }
 }
 
 sub init {
@@ -172,7 +182,7 @@ sub init {
         $anchor =~ s!\.pm$!.ini!;
         unless ($anchor && (-f $anchor) && (-r $anchor) && (-s $anchor)) {
             $anchor = undef;
-            return $self->_error("Konfigurationsdatei '$base.ini' in %INC nicht gefunden");
+            return $self->_error("Can't locate '$base.ini' in %INC");
         }
     }
     return $self->set($SYS, $SPECIAL, $SCOPE, $scope) && $self->add($anchor);
@@ -225,7 +235,7 @@ sub set {
     my $source  = pop || $CMDLINE;
     if ($section eq $SPECIAL && $source ne $SYS) {
         if ($key eq $OS || $key eq $SCOPE || $key eq $HOME || $key eq $WHOAMI) {
-            return $self->_error("\$[$SPECIAL]{$key} ist schreibgeschuetzt");
+            return $self->_error( _read_only_($SPECIAL,$key) );
         }
     }
     return $self->_set($source, 0, $section, $key, $value, 1);
@@ -243,18 +253,18 @@ sub get_all {
             my $val = $self->get($sec,$key);
             if (defined $val)
             {
-                push( @{$list}, "  \$[$sec]{$key} = \"$val\"" );
+                push( @{$list}, "  " . _name_($sec,$key) . " = \"$val\"" );
             }
             else
             {
                 $val = $self->error();
                 $val =~ s!\s+$!!;
-                push( @{$list}, "! \$[$sec]{$key} : $val" );
+                push( @{$list}, "! " . _name_($sec,$key) . " : $val" );
             }
         }
     }
     foreach my $key (sort keys(%ENV)) {
-        push( @{$list}, "  \$[ENV]{$key} = \"$ENV{$key}\"" );
+        push( @{$list}, "  " . _name_($ENV,$key) . " = \"$ENV{$key}\"" );
     }
     return $list;
 }
@@ -310,15 +320,15 @@ sub _init {
 }
 
 sub _add {
-    my $self = shift;
-    my $file = shift;
+    my($self,$file,$list) = @_;
     my $line = 0;
     my $section = $DEFAULT;
     my $scope = $self->scope();
-    my $next;
+    my $next = '';
     my @next = ();
-    local($_);
-    foreach (@_) {
+    local($_); # because of foreach
+    local($@); # because of parse()
+    foreach (@$list) {
         $line++;
         # Leerzeilen und Kommentarzeilen ignorieren
         /^\s*(\S)/ && $1 ne '#' || next;
@@ -331,32 +341,23 @@ sub _add {
         }
         # Text in Schluessel und Wert zerlegen
         unless (/^\s*\$?([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(.*?\S.*?)\s*$/ && substr($1,-1) ne '-') {
-            return $self->_error('Syntaxfehler', $_, $section, $file, $line);
+            return $self->_error($SYNTAX, $_, $section, $file, $line);
         }
         my $key = $1;
-        my $value = $2;  # ist ggf. in doppelte Anfuehrungszeichen verpackt
+        my $value = $2; # ist ggf. in doppelte Anfuehrungszeichen verpackt
         $value =~ s/^\s*"(.*)"\s*$/$1/;
-        return $self->_error("\$[$SPECIAL]{$key} ist schreibgeschuetzt")
+        return $self->_error( _read_only_($SPECIAL,$key) )
             if $section eq $SPECIAL;
         if (($key eq $NEXTCONF) && ($section eq $scope)) {
             $next = $value;
-            push(@next, $line);
         }
-        else {
-            $self->_set($file, $line, $section, $key, $value) || return undef;
-        }
+        $self->_set($file, $line, $section, $key, $value) || return undef;
     }
-    return 1 unless defined $next;
-    # Ich lasse hoechstens einen NEXTCONF-Eintrag zu
-    if (scalar(@next) > 1) {
-        my $error = "Mehrfacher Eintrag in Datei '$file' fuer \$[$scope]{$NEXTCONF}";
-        return $self->_error($error . " (Zeilen @next)");
-    }
-    unless (defined $self->parse($next)) {
-        return $self->_error('Syntaxfehler', $@, $NEXTCONF, $file, @next);
-    }
-    $next = $self->parse($next, $scope);
-    return defined $next ? $self->add($next) : undef;
+    return 1 if $next eq '';
+    return $self->add($next)
+        if (defined ($next = $self->parse($next, $scope)));
+    $$self{'<error>'} = $@;
+    return undef;
 }
 
 sub _error {
@@ -364,28 +365,29 @@ sub _error {
     my $location = '';
     if (defined $section || defined $source || defined $line) {
         $location = ' in';
-        $location .= " $source"      if defined $source;
-        $location .= " Zeile #$line" if defined $line;
-        $location .= " [$section]"   if defined $section;
+        $location .= " $source"     if defined $source;
+        $location .= " line #$line" if defined $line;
+        $location .= " [$section]"  if defined $section;
     }
     $description = $description ? ": $description" : '';
-    $$self{'<error>'} = "$text$location$description";
+    $$self{'<error>'} = $text . $location . $description;
     return undef;
 }
 
 sub _set {
     my($self, $source, $line, $section, $key, $value, $override) = @_;
-    return $self->_error("\$[$ENV]{$key} ist schreibgeschuetzt") if $section eq $ENV;
+    local($@); # because of parse()
+    return $self->_error( _read_only_($ENV,$key) ) if $section eq $ENV;
     my $src = $$self{$section}{$key}{'source'};
     if (defined $src && $src eq $source && $src ne $SYS) {
-        my $error = "Doppelter Eintrag in Datei '$src' fuer " . _name_($section,$key);
+        my $error = "Double entry in file '$src' for configuration constant " . _name_($section,$key);
         if ($line && $$self{$section}{$key}{'line'}) {
-            $error = "$error (Zeilen $$self{$section}{$key}{'line'} und $line)";
+            $error .= " in line #$$self{$section}{$key}{'line'} and #$line";
         }
         return $self->_error($error);
     }
     unless (defined $self->parse($value)) {
-        return $self->_error('Syntaxfehler', $@, $section, $source, $line);
+        return $self->_error($SYNTAX, $@, $section, $source, $line);
     }
     if ($override || not $src) {
         $$self{$section}{$key}{'source'} = $source;
@@ -402,12 +404,16 @@ sub _set {
 
 sub _name_ {
     my $key = pop;
-    my $section = pop || $DEFAULT;
-    return $section eq $DEFAULT ? "\${$key}" : "\$[$section]{$key}";
+    my $sec = pop || $DEFAULT;
+    return "\$[$sec]{$key}";
 }
 
 sub _not_found_ {
-    return "Konstante '" . _name_(@_) . "' nicht gefunden";
+    return "Configuration constant " . _name_(@_) . " not found";
+}
+
+sub _read_only_ {
+    return "Configuration constant " . _name_(@_) . " is read-only";
 }
 
 ############################################################
@@ -1120,13 +1126,12 @@ Konfigurations-Objekts ("SPECIAL"-Variablen).
 
 =item *
 
-C<_add(file, line1, line2, ...)>
+C<_add(file, [ line1, line2, ... ])>
 
 Ich merke mir die angegebenen Zeilen
 
  Parameter: Dateiname
-            Zeile1
-            Zeile2
+            Referenz auf Array mit Zeileninhalten
             ...
  Rueckgabe: <OK> || undef
 
@@ -1182,16 +1187,24 @@ diesen Faellen setze ich einen Fehler und gebe undef zurueck.
 C<_name_([section,] key)>
 
 Ich gebe den Namen in der Form C<$[section]{key}> zurueck. Ist
-keine Section oder die DEFAULT-Section angegeben, dann gebe ich
-nur den Key (in der Form C<${key}>) zurueck.
+keine Section oder die DEFAULT-Section angegeben, dann wird als
+Section C<[DEFAULT]> geschrieben.
 
 =item *
 
 C<_not_found_([section,] key)>
 
-Ich gebe den String "C<Konstante '$[section]{key}' nicht gefunden>"
-zurueck. Ist keine Section oder die DEFAULT-Section angegeben, dann
-gebe ich nur den String "C<Konstante '${key}' nicht gefunden>" zurueck.
+Ich gebe den String "C<Configuration constant $[section]{key} not found>"
+zurueck. Ist keine Section oder die DEFAULT-Section angegeben,
+dann wird als Section C<[DEFAULT]> geschrieben.
+
+=item *
+
+C<_read_only_([section,] key)>
+
+Ich gebe den String "C<Configuration constant $[section]{key} is read-only>"
+zurueck. Ist keine Section oder die DEFAULT-Section angegeben,
+dann wird als Section C<[DEFAULT]> geschrieben.
 
 =back
 
@@ -1199,4 +1212,5 @@ gebe ich nur den String "C<Konstante '${key}' nicht gefunden>" zurueck.
 
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
+ 2003_04_26  Steffen Beyer                   Version 1.2
 

@@ -5,7 +5,7 @@ package Config::Manager::listconf;
 use strict;
 no strict "vars";
 
-print "1..29\n";
+print "1..30\n";
 
 $n = 1;
 
@@ -24,7 +24,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::Base::VERSION eq '1.1')
+    if ($Config::Manager::Base::VERSION eq '1.2')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;
@@ -44,7 +44,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::Conf::VERSION eq '1.1')
+    if ($Config::Manager::Conf::VERSION eq '1.2')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;
@@ -64,7 +64,7 @@ else
 {
     print "ok $n\n";
     $n++;
-    if ($Config::Manager::User::VERSION eq '1.1')
+    if ($Config::Manager::User::VERSION eq '1.2')
     {print "ok $n\n";} else {print "not ok $n\n";}
 }
 $n++;
@@ -93,6 +93,7 @@ $n++;
     '  $[DEFAULT]{PROJCONF} = "t/project.ini"',
     '  $[DEFAULT]{USERCONF} = "t/user.ini"',
     '  $[Eureka]{Hat_geklappt} = "Juppie"',
+    '  $[Manager]{NEXTCONF} = "t/hard_defaults.ini"',
     '  $[Person]{Name} = "Steffen Beyer"',
     '  $[Person]{Telefon} = "0162 77 49 721"',
     '  $[TEST]{NEXTCONF} = "t/TEST.ini"'
@@ -122,7 +123,7 @@ closedir(DIR);
 
 $file = $dir[$#dir];
 
-if ($file =~ m!^02____example.t-\d{4}-\d+-\d+\.log$!)
+if ($file =~ m!^02____example\.t-\d{6}-\d{6}-\d+-\d+\.log$!)
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 
@@ -146,7 +147,7 @@ if ($log[1] =~ m!^\s*$!)
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 
-if ($log[2] =~ m!^ PROTOKOLL: 02____example\.t - \d\d\.\d\d\. \d\d:\d\d:\d\d - Steffen Beyer \([^\)]+\)$!)
+if ($log[2] =~ m!^ STARTED: 02____example\.t - \d\d-[A-Z][a-z][a-z]-\d+ \d\d:\d\d:\d\d - Steffen Beyer \(.*?\)$!)
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 
@@ -158,7 +159,7 @@ if ($log[4] =~ m!^\s*$!)
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 
-if ($log[5] =~ m!^ KOMMANDO: '[^']+' 't.02____example\.t'$!)
+if ($log[5] =~ m!^ COMMAND: '[^']+' 't.02____example\.t'$!)
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 

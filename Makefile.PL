@@ -26,7 +26,7 @@ WriteMakefile(
     'NAME'           => 'Config::Manager',
     'VERSION_FROM'   => 'Manager.pm', # finds $VERSION
     'PREREQ_PM'      => {
-                            'IO::File'      => '0.0',
+                            'Symbol'        => '0.0',
                             'File::Compare' => '0.0',
                             'File::Copy'    => '0.0',
                             'Net::SMTP'     => '0.0',

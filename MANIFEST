@@ -18,6 +18,7 @@ lib/Config/Manager/Report.pm
 lib/Config/Manager/SendMail.pm
 lib/Config/Manager/User.pm
 scripts/listconf.pl
+scripts/showconf.pl
 scripts/update_ini.pl
 t/00____version.t
 t/01_____config.t

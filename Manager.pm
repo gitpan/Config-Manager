@@ -24,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 
 1;
 
@@ -48,7 +48,7 @@ Config::Manager::*(3)
 
 =head1 VERSION
 
-This man page documents "Config::Manager" version 1.1.
+This man page documents "Config::Manager" version 1.2.
 
 =head1 AUTHORS
 

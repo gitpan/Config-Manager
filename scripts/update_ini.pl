@@ -62,7 +62,7 @@ if (@ARGV)
 {
     &Usage();
     exit 0 if ((@ARGV == 1) && ($ARGV[0] =~ /^--?(?:h|\?|help|hilfe)/i));
-    &ReportErrorAndExit("Falsche Anzahl von Parametern!");
+    &ReportErrorAndExit("Wrong number of parameters!");
 }
 
 ###########
@@ -123,7 +123,7 @@ unless (-f $ORIG)
 {
     unless (rename($INI,$ORIG))
     {
-        &ReportErrorAndExit("Konnte Datei '$INI' nicht in '$ORIG' umbenennen: $!");
+        &ReportErrorAndExit("Unable to rename file '$INI' to '$ORIG': $!");
     }
 }
 
@@ -144,17 +144,20 @@ sub Usage
 {
     print <<"VERBATIM";
 
-Aufruf:
+Usage:
 
   $self -h
   $self
 
-  Fuehrt automatische Aenderungen in der Datei "$INI"
-  des jeweiligen Aufrufers durch.
+  This script performs some changes in file
+  "$INI"
+  automatically for each caller.
 
-  Mehrmaliges Aufrufen ist unschaedlich.
+  The script can be called more than once without harm.
 
-  Die urspruengliche Datei wird in "$ORIG" gesichert.
+  The original file is first saved in file
+  "$ORIG"
+  (for safety).
 
 VERBATIM
 }
