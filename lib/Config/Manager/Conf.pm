@@ -28,7 +28,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.5';
+$VERSION = '1.6';
 
 ################################################################################
 # Datenstrukturen
@@ -41,8 +41,9 @@ my $PRIVATE  = "\\bPRIVATE?\\.ini\$";
 
 # Besondere Datenquellen
 my @WHOAMI   = qw( USERNAME LOGNAME USER LOGIN );
-my $CMDLINE  = '<cmdline>';
-my $SYS      = '<sys>';
+my $USR      = '<USR>';
+my $SYS      = '<SYS>';
+my $EXT      = '<ENV>';
 # Sections
 my $ENV      = 'ENV';
 my $SPECIAL  = 'SPECIAL';
@@ -235,7 +236,7 @@ sub set {
     my $value   = pop;
     my $key     = pop;
     my $section = pop || $DEFAULT;
-    my $source  = pop || $CMDLINE;
+    my $source  = pop || $USR;
     return $self->_error( _read_only_($SPECIAL,$key) )
         if ($section eq $SPECIAL && $source ne $SYS &&
         ($key eq $OS || $key eq $PERL || $key eq $SCOPE));
@@ -252,20 +253,35 @@ sub get_all {
             (substr($sec,-1) ne '-'));
         foreach my $key (sort keys(%{${$self}{$sec}})) {
             my $val = $self->get($sec,$key);
-            if (defined $val)
-            {
-                push( @{$list}, "  " . _name_($sec,$key) . " = \"$val\"" );
-            }
-            else
-            {
+            my $ok = 1;
+            unless (defined $val) {
                 $val = $self->error();
                 $val =~ s!\s+$!!;
-                push( @{$list}, "! " . _name_($sec,$key) . " : $val" );
+                $ok = 0;
             }
+            push(
+                @{$list},
+                [
+                    $ok,
+                    _name_($sec,$key),
+                    $val,
+                    $$self{$sec}{$key}{'source'},
+                    $$self{$sec}{$key}{'line'}
+                ]
+            );
         }
     }
     foreach my $key (sort keys(%ENV)) {
-        push( @{$list}, "  " . _name_($ENV,$key) . " = \"$ENV{$key}\"" );
+        push(
+            @{$list},
+            [
+                1,
+                _name_($ENV,$key),
+                $ENV{$key},
+                $EXT,
+                0
+            ]
+        );
     }
     return $list;
 }
@@ -291,6 +307,10 @@ sub get_section {
     return $hash;
 }
 
+sub get_files {
+    return [ @{shift->{'<files>'}} ];
+}
+
 ################################################################################
 # Private Methoden
 ################################################################################
@@ -299,6 +319,8 @@ sub _init {
     my $self = shift;
     # Alle frueheren Eintraege loeschen:
     %{$self} = ();
+    # Liste der eingelesenen Dateien anlegen:
+    $$self{'<files>'} = [];
     # Datumsangaben fuer SPECIAL-Section aus localtime() holen
     my @localtime = localtime();
     # Jahresangabe bezieht sich auf das Basisjahr 1900
@@ -330,6 +352,7 @@ sub _add {
     my @next = ();
     local($_); # because of foreach
     local($@); # because of parse()
+    push( @{$$self{'<files>'}}, $file );
     foreach (@$list) {
         $line++;
         # Leerzeilen und Kommentarzeilen ignorieren
@@ -383,7 +406,7 @@ sub _set {
         if ($section eq $ENV || ($section eq $SPECIAL &&
         ($key eq $HOME || $key eq $WHOAMI)));
     my $src = $$self{$section}{$key}{'source'};
-    if (defined $src && $src eq $source && $src ne $SYS) {
+    if (defined $src && $src eq $source && $src ne $SYS && $src ne $USR) {
         my $error = "Double entry in file '$src' for configuration constant " . _name_($section,$key);
         if ($line && $$self{$section}{$key}{'line'}) {
             $error .= " in line #$$self{$section}{$key}{'line'} and #$line";
@@ -1082,13 +1105,35 @@ C<get_all()>
 Ich gebe saemtliche Konfigurationswerte eines Konfigurationsobjekts aus.
 
  Parameter: -
- Rueckgabe: Referenz auf Liste von Werten
+ Rueckgabe: Referenz auf Liste von Quintupeln von Werten
 
-Jedes Element der zurueckgelieferten Liste hat eine der beiden folgenden
-Formen:
+Jedes Element der zurueckgelieferten Liste besteht aus einem anonymen
+Array mit fuenf Werten.
 
-    $[SECTION]{VARIABLE} = "WERT"
-  ! $[SECTION]{VARIABLE} : FEHLERMELDUNG
+Der erste Wert gibt an, ob es sich bei dem dritten Wert um den Inhalt
+der betreffenden Konfigurationskonstanten handelt, oder um eine Fehlermeldung
+(weil der Wert nicht erfolgreich bestimmt werden konnte, z.B. aufgrund
+nicht aufloesbarer eingebetteter Konfigurationskonstanten).
+
+Der Wert "1" bedeutet "alles in Ordnung", der Wert "0" bedeutet, dass
+es sich um eine Fehlermeldung handelt.
+
+Der zweite Wert gibt den Namen der Konfigurationskonstanten in der Form
+"C<$[SECTION]{VARIABLE}>" an.
+
+Der dritte Wert enthaelt entweder den Wert der Konfigurationskonstanten
+oder eine Fehlermeldung.
+
+Der vierte Wert des Tupels gibt die Quelle an, aus dem die betreffende
+Konfigurationskonstante stammt.
+
+Der fuenfte Wert gibt die Zeilennummer in der Quelle an. Dieser kann
+den Wert Null haben, falls es sich bei der Quelle nicht um eine Datei
+gehandelt hat (sondern zum Beispiel um einen expliziten Aufruf der
+Methode "set()").
+
+Die Liste ist alphabetisch (ASCII) nach den Namen der Sections und
+darin nach den Namen der Konfigurationskonstanten sortiert.
 
 =item *
 
@@ -1107,6 +1152,17 @@ Falls ein Wert in der Section nicht ermittelt werden kann
 (z.B. weil er von anderen Werten abhaengt, deren Ermittlung
 nicht moeglich ist), wird er nicht in den Ausgabe-Hash
 kopiert.
+
+=item *
+
+C<get_files()>
+
+Ich gebe die Liste der eingelesenen Konfigurationsdateien fuer
+ein Konfigurationsobjekt zurueck, in der Reihenfolge in der sie
+eingelesen wurden.
+
+ Parameter: -
+ Rueckgabe: Referenz auf Array von Dateinamen
 
 =back
 
@@ -1224,7 +1280,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::Conf" version 1.5.
+This man page documents "Config::Manager::Conf" version 1.6.
 
 =head1 AUTHORS
 

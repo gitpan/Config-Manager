@@ -25,7 +25,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.5';
+$VERSION = '1.6';
 
 ##############
 ## Imports: ##
@@ -190,7 +190,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::PUser" version 1.5.
+This man page documents "Config::Manager::PUser" version 1.6.
 
 =head1 AUTHORS
 

@@ -23,7 +23,7 @@ use Config::Manager::Conf qw(whoami);
 
 my $DEFAULT = 'Manager';
 
-my($self,$owner,$which,$scope,$user,$error,$conf,$list,$item,$max,$len,$line);
+my($self,$owner,$which,$scope,$user,$error,$conf,$list,$line);
 
 $self = $0;
 $self =~ s!^.*[/\\]!!;
@@ -60,9 +60,9 @@ eval
     {
         if (defined $conf->init( $scope ))
         {
-            unless (defined ($list = $conf->get_all()))
+            unless (defined ($list = $conf->get_files()))
             {
-                $error = "can't get all config parameters: " . $conf->error();
+                $error = "can't get all config files: " . $conf->error();
             }
         }
         else
@@ -91,27 +91,8 @@ unless ((-t STDOUT) && (open(MORE, "| more")))
     }
 }
 
-$max = 0;
-foreach $item (@{$list})
+foreach $line (@{$list})
 {
-    $len = length($$item[1]) + length($$item[2]);
-    $len += 2 if ($$item[0]);
-    $max = $len if ($len > $max);
-}
-
-foreach $item (@{$list})
-{
-    $len = length($$item[1]) + length($$item[2]);
-    if ($$item[0]) { $line = '  ' . $$item[1] . ' = "' . $$item[2] . '"'; $len += 2; }
-    else           { $line = '! ' . $$item[1] . ' : '  . $$item[2]; }
-    if ($$item[3])
-    {
-        $line .= (' ' x ($max-$len)) . ' => ' . $$item[3];
-        if ($$item[4])
-        {
-            $line .= ' (' . $$item[4] . ')';
-        }
-    }
     print MORE "$line\n";
 }
 
@@ -130,10 +111,10 @@ Usage:
   $self <scope> <login>
   $self    ''   <login>
 
-  Lists all configuration constants of the current
+  Lists all configuration files of the current
   (or specified) user in the default (or specified)
   scope (i.e., the named chain of configuration files)
-  in alphabetical order.
+  in the order they were read in.
 
 VERBATIM
 }

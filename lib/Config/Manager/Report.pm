@@ -12,10 +12,10 @@
 package Config::Manager::Report;
 
 use strict;
-use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION %SIG
-             $USE_LEADIN $STACKTRACE $LEVEL_TRACE $LEVEL_INFO
-             $LEVEL_WARN $LEVEL_ERROR $LEVEL_FATAL $TO_HLD
-             $TO_OUT $TO_ERR $TO_LOG $FROM_HOLD $SHOW_ALL
+use vars qw( @ISA @EXPORT @ALL @AUX @EXPORT_OK %EXPORT_TAGS $VERSION %SIG
+             $SHOW_ALL $USE_LEADIN $STACKTRACE
+             $LEVEL_TRACE $LEVEL_INFO $LEVEL_WARN $LEVEL_ERROR $LEVEL_FATAL
+             $FROM_HOLD $TO_HLD $TO_OUT $TO_ERR $TO_LOG
              @TRACE @INFO @WARN @ERROR @FATAL );
 
 require Exporter;
@@ -24,14 +24,24 @@ require Exporter;
 
 @EXPORT = qw();
 
-@EXPORT_OK = qw( $USE_LEADIN $STACKTRACE $LEVEL_TRACE $LEVEL_INFO
-                 $LEVEL_WARN $LEVEL_ERROR $LEVEL_FATAL $TO_HLD
-                 $TO_OUT $TO_ERR $TO_LOG $FROM_HOLD $SHOW_ALL
-                 @TRACE @INFO @WARN @ERROR @FATAL end abort );
+@ALL = qw( $SHOW_ALL $USE_LEADIN $STACKTRACE
+           $LEVEL_TRACE $LEVEL_INFO $LEVEL_WARN $LEVEL_ERROR $LEVEL_FATAL
+           $FROM_HOLD $TO_HLD $TO_OUT $TO_ERR $TO_LOG
+           @TRACE @INFO @WARN @ERROR @FATAL
+           end abort );
 
-%EXPORT_TAGS = (all => [@EXPORT_OK]);
+@AUX = qw( Normalize MakeDir );
 
-$VERSION = '1.5';
+@EXPORT_OK = (@ALL,@AUX);
+
+%EXPORT_TAGS =
+(
+    all => [@ALL],
+    aux => [@AUX],
+    ALL => [@EXPORT_OK]
+);
+
+$VERSION = '1.6';
 
 use Config::Manager::Conf qw( whoami );
 use Symbol;
@@ -67,6 +77,8 @@ $SHOW_ALL    = 0x00;
 ## Internal configuration constants: ##
 #######################################
 
+my $LOGSUFFIX = 'log';
+
 my @LOGFILEPATH  = ('DEFAULT', 'LOGFILEPATH');
 my @FULLNAME     = ('Person',  'Name');
 
@@ -95,13 +107,13 @@ my $MAXEVALLEN = 0; # 0 = no limit
 ## Global variables: ##
 #######################
 
-my($Singleton) = 0;
+my $Singleton = 0;
 
-my(@Inventory) = ();
+my @Inventory = ();
 
-my($User) = (&whoami())[0] || '';
+my $User = (&whoami())[0] || '';
 
-my($Count) = 0;
+my $Count = 0;
 
 ########################
 ## Private functions: ##
@@ -173,14 +185,14 @@ sub _LongTime
 
 sub _which
 {
-    my($self) = @_;
+    my($self) = shift;
 
     if (ref $self) { return $self; }
     else
     {
         unless (ref $Singleton)
         {
-            if (ref ($Singleton = Config::Manager::Report->new()))
+            if (ref ($Singleton = Config::Manager::Report->new(@_)))
             {
                 ${$Singleton}{'singleton'} = 1;
                 $SIG{'__WARN__'} = \&_warn_;
@@ -266,29 +278,76 @@ sub abort
     exit 1;
 }
 
+sub Normalize
+{
+    my $dir = defined $_[0] ? $_[0] : '';
+    my $drv = '';
+
+    if    ($dir =~ s!^([a-zA-Z]:)!!) { $drv = $1;  }
+    elsif ($dir !~ m!^[/\\]!)        { $drv = '.'; }
+    $dir = "/$dir/";
+    $dir =~ s!\\!/!g;
+    $dir =~ s!//+!/!g;
+    while ($dir =~ s!/(?:\./)+!/!g) {};
+    while ($dir =~ s,/(?!\.\./)[^/]+/\.\./,/,g) {};
+    $dir =~ s!^/(?:\.\./)+!/!g;
+    $dir =~ s!^/!!;
+    $dir =~ s!/$!!;
+
+    return wantarray ? ($drv,$dir) : "$drv/$dir";
+}
+
+sub MakeDir
+{
+    my($drv,$dir) = Normalize($_[0]);
+    my(@dir);
+    local($!);
+
+    return '' if (-d "$drv/$dir");
+    @dir = split(/\//, $dir);
+    $dir = $drv;
+    while (@dir)
+    {
+        $dir .= '/' . shift(@dir);
+        unless (-d $dir)
+        {
+            unless (mkdir($dir,0777))
+            {
+                return "Can't mkdir '$dir': $!";
+            }
+        }
+    }
+    return '';
+}
+
 #####################
 ## Public methods: ##
 #####################
 
 sub singleton
 {
-    return _which($Singleton); # trigger creation if necessary
+    shift;                        # discard class name
+    return _which($Singleton,@_); # trigger creation if necessary
 }
 
 sub new
 {
-    my($class,$tool,$path,$file) = @_;
-    my($err,$handle,$user,$name,$self,$time,$text);
-
+    my($class) = shift || __PACKAGE__;
+    my($tool)  = shift || '';
+    my($path)  = shift || '';
+    my($file)  = shift || '';
+    my($err,$name,$user,$handle,$self,$time,$text);
     local($_); # because of map()
-    $class = ref($class) || $class || __PACKAGE__;
-    unless (defined $tool && $tool !~ /^\s*$/)
+
+    $class = ref($class) || $class;
+    $name = Config::Manager::Conf->get(@FULLNAME) || '';
+    if ($tool =~ /^\s*$/)
     {
         $tool = $0;
         $tool =~ s!^.*[/\\]!!;
-        $tool =~ s!\.+(?:pl|bat|sh)$!!i;
+        $tool =~ s!\.+[^\.]*$!!;
     }
-    unless (defined $path && $path !~ /^\s*$/)
+    if ($path =~ /^\s*$/)
     {
         unless (defined ($path = Config::Manager::Conf->get(@LOGFILEPATH)))
         {
@@ -298,30 +357,20 @@ sub new
                 "::new(): Can't find log directory in configuration data: $err");
         }
     }
-    $path =~ s![/\\]+$!!;
-    unless (-d $path)
+    $file =~ s!^.*[/\\]!!;
+    if ($file =~ /^\s*$/)
+    {
+        $user = $User || $name || 'unknown';
+        $user =~ s!\s+!!g;
+        $path .= "/$tool/$user";
+        $file = join('-', $tool, $user, _ShortTime(), $$, ++$Count) . '.' . $LOGSUFFIX;
+    }
+    if ($err = MakeDir($path))
     {
         return(__PACKAGE__ .
-            "::new(): Log directory '$path' does not exist!");
+            "::new(): Can't create log directory '$path': $err");
     }
-    if (defined $file && $file !~ /^\s*$/)
-    {
-        $file="$path/$file";
-    }
-    else # supply one
-    {
-        $Count++;
-        $path .= "/$tool";
-        $file = "$path/$tool-" . _ShortTime() . "-$$-$Count.log";
-        unless (-d $path)
-        {
-            unless (mkdir($path, 0777))
-            {
-                return(__PACKAGE__ .
-                    "::new(): Can't create log directory '$path': $!");
-            }
-        }
-    }
+    $file = Normalize("$path/$file");
     $handle = gensym();
     unless (open($handle, ">$file"))
     {
@@ -329,34 +378,30 @@ sub new
             "::new(): Can't open logfile '$file': $!");
     }
     select( ( select($handle), $| = 1 )[0] );
-    $user = $User;
-    $name = Config::Manager::Conf->get(@FULLNAME) || '';
     $self = { };
     bless($self, $class);
-#   ${$self}{'user'} = $user;
+#   ${$self}{'user'} = $User;
 #   ${$self}{'name'} = $name;
 #   ${$self}{'tool'} = $tool;
 #   ${$self}{'path'} = $path;
-    ${$self}{'file'} = $file; # log file name
-    ${$self}{'hand'} = $handle; # log file handle
-    ${$self}{'hold'} = [ ];   # for putting lines on hold
-    ${$self}{'stat'} = [ ];   # for statistics
-    ${$self}{'flag'} = 0;     # for automatic dump of logfile name
+    ${$self}{'file'} = $file;   # logfile name
+    ${$self}{'hand'} = $handle; # logfile handle
+    ${$self}{'hold'} = [ ];     # for putting lines on hold
+    ${$self}{'stat'} = [ ];     # for statistics
+    ${$self}{'flag'} = 0;       # for automatic dump of logfile name
     ${$self}{'level'} = $SHOW_ALL;
     # (for suppressing messages below the indicated level)
-    if (($user ne '') && ($name ne ''))
+    $user = $User;
+    if (($user !~ /^\s*$/) && ($name !~ /^\s*$/))
     {
         $user = "$name ($user)";
     }
     else
     {
-        if (($user eq '') && ($name eq ''))
+        if ($user =~ /^\s*$/)
         {
-            $user = "(User name not found)";
-        }
-        elsif ($name ne '')
-        {
-            $user = $name;
+            if ($name =~ /^\s*$/) { $user = "<Unknown User>"; }
+            else                  { $user = $name; }
         }
     }
     $time = _LongTime();
@@ -433,7 +478,7 @@ sub report
                     $indent . "called at $stack[1] line $stack[2]\n"
                 );
             }
-            # Comment out next line if stack traces in log file ONLY:
+            # Comment out next line if stack traces in logfile ONLY:
 ####        push( @{$text}, @trace );
         }
     }
@@ -759,9 +804,11 @@ C<private &_LongTime()>
 
 =item *
 
-C<private &_which($self)>
+C<private &_which($self[,...])>
 
  Parameter: $self - Referenz auf Log-Objekt oder Klassenname
+            ...   - weitere (optionale) Parameter, die ggfs. an
+                    "new()" weitergereicht werden (siehe dort)
 
  Rueckgabe: $self, falls $self eine Objekt-Referenz ist,
             oder eine Referenz auf das Singleton-Objekt sonst
@@ -774,7 +821,8 @@ Klassenmethode), wird eine Referenz auf das Default-Log-Objekt (das
 sogenannte "Singleton"-Objekt) dieser Klasse zurueckgeliefert.
 
 Falls das Singleton-Objekt noch nicht existiert, wird es durch den Aufruf
-dieser Routine erzeugt.
+dieser Routine erzeugt. In diesem Falle werden alle weiteren Aufrufparameter
+an den Konstruktor ("new()") durchgereicht (siehe dort).
 
 Man kann diese Routine uebrigens sowohl als Funktion als auch als Methode
 verwenden; der Aufruf als Funktion ist jedoch etwas schneller.
@@ -861,7 +909,7 @@ gerufen werden, die ihrerseits auf der "abort()"-Funktion beruht).
 
 =item *
 
-C<public Config::Manager::Report-E<gt>singleton()>
+C<public Config::Manager::Report-E<gt>singleton([...])>
 
 Diese Methode gibt eine Referenz auf das Singleton-Objekt zurueck.
 
@@ -877,14 +925,17 @@ sich auf das Singleton-Objekt und legen es automatisch an, falls es noch nicht
 existiert (genauer gesagt alle Objekt-Methoden, in denen auf den Parameter
 "C<$self>" nur ueber die Funktion "C<&_which()>" zugegriffen wird).
 
- Parameter: -
+ Parameter: ...   - optionale Parameter, die ggfs. an "new()"
+                    weitergereicht werden (siehe dort)
 
  Rueckgabe: Gibt eine Referenz auf das Singleton-Objekt zurueck
             oder einen String mit einer Fehlermeldung, falls das
             Singleton-Objekt nicht erzeugt werden konnte
 
-Falls das Singleton-Objekt noch nicht existiert, wird es durch diesen Aufruf
-erzeugt.
+Wenn das Singleton-Objekt noch nicht existiert, wird es durch diesen Aufruf
+erzeugt. In diesem Falle werden alle optionalen Aufrufparameter an den
+Konstruktor ("new()") durchgereicht, d.h. man kann ggfs. den Pfad und
+den Namen der Log-Datei beeinflussen.
 
 "C<Config::Manager::Report-E<gt>methode();>" ist dabei dasselbe wie
 "C<Config::Manager::Report-E<gt>singleton()-E<gt>methode();>" oder wie
@@ -899,15 +950,26 @@ geschlossen wurde.
 
 Es gibt im Grunde nur eine einzige sinnvolle Verwendung fuer diese Methode,
 naemlich, um die Erzeugung des Singleton-Objekts auszuloesen (wie das
-beispielsweise in "Config::Manager::Base.pm" geschieht).
+beispielsweise in "Config::Manager::Base.pm" geschieht), und um ggfs.
+den Namen und Pfad dieser Logdatei festzulegen.
 
 =item *
 
 C<public $class-E<gt>new([$tool[,$path[,$file]]])>
 
-Bei Aufruf - in der Regel bei Toolstart - wird das Logfile angelegt. Ist das
-Logverzeichnis nicht angegeben und das automatisch gewaehlte Logverzeichnis
-nicht vorhanden, so wird auch dieses angelegt (jedoch nur die letzte Ebene).
+Bei Aufruf - in der Regel bei Toolstart - wird das Logfile angelegt.
+
+Falls der Name des aufrufenden Tools (= wird Teil des ggfs. automatisch
+bestimmten Pfades und Dateinamens) nicht angegeben ist, wird er automatisch
+bestimmt.
+
+Falls das Logverzeichnis nicht angegeben ist, wird der Pfad automatisch
+aus der Konfiguration geholt (Section [DEFAULT], Konstante 'LOGFILEPATH').
+
+Falls der Pfad noch nicht vorhanden ist, wird er automatisch angelegt.
+
+Falls der Name der Logdatei nicht angegeben ist, wird hierfuer automatisch
+ein (moeglichst sinnvoller) Default-Wert bestimmt.
 
 Danach wird der Header des Logfiles geschrieben. Dieser enthaelt z.B. Uhrzeit,
 Namen des Aufrufers und Kommandoaufruf samt Optionen.
@@ -1163,7 +1225,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::Report" version 1.5.
+This man page documents "Config::Manager::Report" version 1.6.
 
 =head1 AUTHORS
 

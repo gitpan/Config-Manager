@@ -21,35 +21,35 @@ require Exporter;
 @EXPORT = qw();
 
 @EXPORT_OK = qw(
-                   Normalize
-                   MakeDir
-                   UniqueTempFileName
-                   ConvertFromHost
-                   ConvertToHost
-                   CompareFiles
-                   CopyFile
-                   MoveByCopying
-                   MD5Checksum
-                   ReadFile
-                   WriteFile
-                   AppendFile
-                   ConvertFileWithCallback
-                   SerializeSimple
-                   Semaphore_Passeer
-                   Semaphore_Verlaat
-                   GetNextTicket
-               );
+    Normalize
+    MakeDir
+    UniqueTempFileName
+    ConvertFromHost
+    ConvertToHost
+    CompareFiles
+    CopyFile
+    MoveByCopying
+    MD5Checksum
+    ReadFile
+    WriteFile
+    AppendFile
+    ConvertFileWithCallback
+    SerializeSimple
+    Semaphore_Passeer
+    Semaphore_Verlaat
+    GetNextTicket
+);
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.5';
+$VERSION = '1.6';
 
 use Symbol;
 use Fcntl qw(:DEFAULT :flock);
 
 use Config::Manager::Base qw( $SCOPE );
 use Config::Manager::Conf;
-use Config::Manager::Report qw(:all);
+use Config::Manager::Report qw(:ALL); # also import Normalize and MakeDir
 use File::Compare;
 use File::Copy;
 use Digest::MD5;
@@ -92,46 +92,9 @@ END
 ## Public functions: ##
 #######################
 
-sub Normalize
-{
-    my $dir = defined $_[0] ? $_[0] : '';
-    my $drv = '';
+# sub Normalize; # imported from Config::Manager::Report
 
-    if ($dir =~ s!^([a-zA-Z]:)!!) { $drv = $1; }
-    $dir = "/$dir/";
-    $dir =~ s!\\!/!g;
-    $dir =~ s!//+!/!g;
-    while ($dir =~ s!/(?:\./)+!/!g) {};
-    while ($dir =~ s,/(?!\.\./)[^/]+/\.\./,/,g) {};
-    $dir =~ s!^/(?:\.\./)+!/!g;
-    $dir =~ s!^/!!;
-    $dir =~ s!/$!!;
-
-    return wantarray ? ($drv,$dir) : "$drv/$dir";
-}
-
-sub MakeDir
-{
-    my($drv,$dir) = Normalize($_[0]);
-    my(@dir);
-    local($!);
-
-    return '' if (-d "$drv/$dir");
-    @dir = split(/\//, $dir);
-    $dir = $drv;
-    while (@dir)
-    {
-        $dir .= '/' . shift(@dir);
-        unless (-d $dir)
-        {
-            unless (mkdir($dir,0777))
-            {
-                return "Can't mkdir '$dir': $!";
-            }
-        }
-    }
-    return '';
-}
+# sub MakeDir;   # imported from Config::Manager::Report
 
 sub UniqueTempFileName
 {
@@ -1046,17 +1009,23 @@ Normalizes a given path (which may include a filename part),
 i.e., substitutes "\" with "/", removes multiple slashes,
 removes "../" and "./" where possible, etc.
 
-This function assumes absolute paths and will prepend a
-slash if necessary. Any trailing slash(es) will be removed.
+This function accepts absolute as well as relative paths.
+Any trailing slash(es) will be removed.
 
 If called in list context, this function returns a possible
 drive letter and the path (without leading slash this time)
 separately.
 
-In scalar context, the function returns C<"$drive/$path">.
+The "drive" return value will contain a dot (".") if the
+given path was a relative one.
 
-If the input path does not contain a drive letter, the
-"C<$drive>" part will be empty (the empty string).
+In scalar context, the function returns C<"$drive/$path">.
+(Again, the "drive" will be a dot (".") if the path is
+relative.)
+
+If the given path does not contain a drive letter and
+the path is absolute, the "drive" part will be empty
+(i.e., contain the empty string).
 
 So this function works for Unix and Win32 alike,
 but not for other operating systems with different
@@ -1481,7 +1450,7 @@ Config::Manager::User(3).
 
 =head1 VERSION
 
-This man page documents "Config::Manager::File" version 1.5.
+This man page documents "Config::Manager::File" version 1.6.
 
 =head1 AUTHORS
 
