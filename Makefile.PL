@@ -30,7 +30,7 @@ WriteMakefile(
                             'File::Compare' => '0.0',
                             'File::Copy'    => '0.0',
                             'Net::SMTP'     => '0.0',
-                            'MD5'           => '0.0'
+                            'Digest::MD5'   => '0.0'
                         },
     'EXE_FILES'      => [ glob("scripts/*.pl") ],
 #   ($] >= 5.005 ?

@@ -40,14 +40,14 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.2';
+$VERSION = '1.3';
 
 use Config::Manager::Base qw( $SCOPE );
 use Config::Manager::Conf;
 use Config::Manager::Report qw(:all);
 use File::Compare;
 use File::Copy;
-use MD5;
+use Digest::MD5;
 
 #######################################
 ## Internal configuration constants: ##
@@ -362,8 +362,8 @@ sub MD5Checksum
             "Can't read file '$source': $!");
         return undef;
     }
-    $md5 = MD5->new();
-    $md5->reset();
+    $md5 = Digest::MD5->new();
+#   $md5->reset(); # obsolete, same as new()
     $md5->addfile(*SOURCE);
     $checksum = $md5->hexdigest();
     unless (close(SOURCE))
@@ -1216,4 +1216,5 @@ into any given package you want.
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
  2003_04_26  Steffen Beyer                   Version 1.2
+ 2003_05_01  Steffen Beyer                   Version 1.3
 

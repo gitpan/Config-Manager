@@ -24,7 +24,7 @@ require Exporter;
 
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-$VERSION = '1.2';
+$VERSION = '1.3';
 
 BEGIN # Work-around for Bug in Net::Config 1.00 line# 40 under Win32
 {
@@ -294,4 +294,5 @@ normalen Beenden der Verbindung mit dem SMTP-Server.
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
  2003_04_26  Steffen Beyer                   Version 1.2
+ 2003_05_01  Steffen Beyer                   Version 1.3
 

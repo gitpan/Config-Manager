@@ -26,7 +26,7 @@ require Exporter;
 
 @EXPORT_OK = qw( whoami );
 
-$VERSION = '1.2';
+$VERSION = '1.3';
 
 ################################################################################
 # Datenstrukturen
@@ -233,11 +233,9 @@ sub set {
     my $key     = pop;
     my $section = pop || $DEFAULT;
     my $source  = pop || $CMDLINE;
-    if ($section eq $SPECIAL && $source ne $SYS) {
-        if ($key eq $OS || $key eq $SCOPE || $key eq $HOME || $key eq $WHOAMI) {
-            return $self->_error( _read_only_($SPECIAL,$key) );
-        }
-    }
+    return $self->_error( _read_only_($SPECIAL,$key) )
+        if ($section eq $SPECIAL && $source ne $SYS &&
+        ($key eq $OS || $key eq $SCOPE));
     return $self->_set($source, 0, $section, $key, $value, 1);
 }
 
@@ -365,9 +363,9 @@ sub _error {
     my $location = '';
     if (defined $section || defined $source || defined $line) {
         $location = ' in';
-        $location .= " $source"     if defined $source;
-        $location .= " line #$line" if defined $line;
-        $location .= " [$section]"  if defined $section;
+        $location .= " file '$source'" if $source;
+        $location .= " line #$line"    if $line;
+        $location .= " [$section]"     if $section;
     }
     $description = $description ? ": $description" : '';
     $$self{'<error>'} = $text . $location . $description;
@@ -377,7 +375,9 @@ sub _error {
 sub _set {
     my($self, $source, $line, $section, $key, $value, $override) = @_;
     local($@); # because of parse()
-    return $self->_error( _read_only_($ENV,$key) ) if $section eq $ENV;
+    return $self->_error( _read_only_($section,$key) )
+        if ($section eq $ENV || ($section eq $SPECIAL &&
+        ($key eq $HOME || $key eq $WHOAMI)));
     my $src = $$self{$section}{$key}{'source'};
     if (defined $src && $src eq $source && $src ne $SYS) {
         my $error = "Double entry in file '$src' for configuration constant " . _name_($section,$key);
@@ -1213,4 +1213,5 @@ dann wird als Section C<[DEFAULT]> geschrieben.
  2003_02_05  Steffen Beyer & Gerhard Albers  Version 1.0
  2003_02_14  Steffen Beyer                   Version 1.1
  2003_04_26  Steffen Beyer                   Version 1.2
+ 2003_05_01  Steffen Beyer                   Version 1.3
 

@@ -79,7 +79,7 @@ $conf->error() =~ m!^Unable to open file 't/bullshit\.ini':! ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section01.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section01.ini line #7 [DEFAULT]: [TWO' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section01.ini' line #7 [DEFAULT]: [TWO" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -87,7 +87,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section02.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section02.ini line #7 [DEFAULT]: TWO]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section02.ini' line #7 [DEFAULT]: TWO]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -95,7 +95,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section03.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section03.ini line #7 [DEFAULT]: [TWO] # geht nicht' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section03.ini' line #7 [DEFAULT]: [TWO] # geht nicht" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -103,7 +103,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section04.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section04.ini line #7 [DEFAULT]: [-TWO]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section04.ini' line #7 [DEFAULT]: [-TWO]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -111,7 +111,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section05.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section05.ini line #7 [DEFAULT]: [TWO-]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section05.ini' line #7 [DEFAULT]: [TWO-]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -119,7 +119,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section06.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section06.ini line #7 [DEFAULT]: [-]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section06.ini' line #7 [DEFAULT]: [-]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -127,7 +127,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section07.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section07.ini line #7 [DEFAULT]: [7Zwerge]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section07.ini' line #7 [DEFAULT]: [7Zwerge]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -135,7 +135,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section08.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section08.ini line #7 [DEFAULT]: [8]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section08.ini' line #7 [DEFAULT]: [8]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -143,7 +143,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section09.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section09.ini line #7 [DEFAULT]: [_score]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section09.ini' line #7 [DEFAULT]: [_score]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -151,7 +151,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_section10.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_section10.ini line #7 [DEFAULT]: [_]' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_section10.ini' line #7 [DEFAULT]: [_]" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -163,7 +163,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key01.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key01.ini line #8 [TWO]: THIS' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key01.ini' line #8 [TWO]: THIS" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -171,7 +171,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key02.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key02.ini line #8 [TWO]: THIS IS = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key02.ini' line #8 [TWO]: THIS IS = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -179,7 +179,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key03.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key03.ini line #8 [TWO]: 7 = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key03.ini' line #8 [TWO]: 7 = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -187,7 +187,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key04.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key04.ini line #8 [TWO]: 4U = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key04.ini' line #8 [TWO]: 4U = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -195,7 +195,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key05.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key05.ini line #8 [TWO]: _X = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key05.ini' line #8 [TWO]: _X = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -203,7 +203,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key06.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key06.ini line #8 [TWO]: X$HELLO = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key06.ini' line #8 [TWO]: X\$HELLO = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -211,7 +211,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key07.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key07.ini line #8 [TWO]:  = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key07.ini' line #8 [TWO]:  = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -219,7 +219,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key08.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key08.ini line #8 [TWO]: -HELLO = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key08.ini' line #8 [TWO]: -HELLO = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -227,7 +227,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key09.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key09.ini line #8 [TWO]: HELLO- = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key09.ini' line #8 [TWO]: HELLO- = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -235,7 +235,7 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_key10.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_key10.ini line #8 [TWO]: - = wrong' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_key10.ini' line #8 [TWO]: - = wrong" ? ok() : nok();
 # Voriger Wert trotzdem eingelesen?
 $conf->get('HELLO') eq 'hello' ? ok() : nok();
 
@@ -283,58 +283,58 @@ $conf->get('HELLO') eq 'hello' ? ok() : nok();
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val01.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_val01.ini line #5 [DEFAULT]: EMPTY =' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val01.ini' line #5 [DEFAULT]: EMPTY =" ? ok() : nok();
 
 # Als Wert nur Leerzeichen angegeben
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val02.ini') ? nok() : ok();
 # Fehlermeldung?
-$conf->error() eq 'Syntax error in t/conf_err_val02.ini line #5 [DEFAULT]: EMPTY =' ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val02.ini' line #5 [DEFAULT]: EMPTY =" ? ok() : nok();
 
 # Verunglueckte Sustitution: Blank zwischen $ und Key
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val03.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val03.ini line #6 [DEFAULT]: found '\$' followed by ' ', expecting '{' or [A-Za-z]" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val03.ini' line #6 [DEFAULT]: found '\$' followed by ' ', expecting '{' or [A-Za-z]" ? ok() : nok();
 
 # Verunglueckte Substitution: Nur oeffnende Klammer
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val04.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val04.ini line #6 [DEFAULT]: missing '}' after variable name 'SYS', unexpected end of string" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val04.ini' line #6 [DEFAULT]: missing '}' after variable name 'SYS', unexpected end of string" ? ok() : nok();
 
 # Verunglueckte qualifizierte Substitution: Nur oeffnende Klammer
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val05.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val05.ini line #6 [DEFAULT]: missing ']' after section name 'A', found '{' instead" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val05.ini' line #6 [DEFAULT]: missing ']' after section name 'A', found '{' instead" ? ok() : nok();
 
 # Verunglueckte qualifizierte Substition: Nur Section
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val06.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val06.ini line #6 [DEFAULT]: missing key name after section name 'A', unexpected end of string" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val06.ini' line #6 [DEFAULT]: missing key name after section name 'A', unexpected end of string" ? ok() : nok();
 
 # Verunglueckte qualifizierte Substition: Nur oeffnende Klammer und Section
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val07.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val07.ini line #6 [DEFAULT]: expecting identifier or variable, unexpected end of string" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val07.ini' line #6 [DEFAULT]: expecting identifier or variable, unexpected end of string" ? ok() : nok();
 
 # Verunglueckte qualifizierte Substition: Nur Section und schliessende Klammer
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val08.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val08.ini line #6 [DEFAULT]: found '\$[A]' followed by '}', expecting '{' or [A-Za-z]" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val08.ini' line #6 [DEFAULT]: found '\$[A]' followed by '}', expecting '{' or [A-Za-z]" ? ok() : nok();
 
 # Verunglueckte Substition: Dollar am Zeilenende
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val09.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val09.ini line #6 [DEFAULT]: illegal '\$' at end of string" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val09.ini' line #6 [DEFAULT]: illegal '\$' at end of string" ? ok() : nok();
 
 # Verunglueckte Substition: Variable beginnt mit Bindestrich
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val10.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val10.ini line #6 [DEFAULT]: found '\$' followed by '-', expecting '{' or [A-Za-z]" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val10.ini' line #6 [DEFAULT]: found '\$' followed by '-', expecting '{' or [A-Za-z]" ? ok() : nok();
 
 # Verunglueckte Substition: Variable endet mit Bindestrich
 $conf = Config::Manager::Conf->new();
 defined $conf->add('t/conf_err_val11.ini') ? nok() : ok();
-$conf->error() eq "Syntax error in t/conf_err_val11.ini line #6 [DEFAULT]: illegal terminating '-' in identifier 'NO-NO-'" ? ok() : nok();
+$conf->error() eq "Syntax error in file 't/conf_err_val11.ini' line #6 [DEFAULT]: illegal terminating '-' in identifier 'NO-NO-'" ? ok() : nok();
 
 ############################################################
 # Schreibzugriffe auf reservierte Sections
@@ -542,23 +542,23 @@ Config::Manager::Conf->get('PATH') eq 'C:/sys/wrk;C:/sys/inst' ? ok() : nok();
 # Die duemmste Art, einen Zyklus zu produzieren
 $conf = conf();
 defined $conf->get('SIMPLE_LOOP') ? nok() : ok();
-$conf->error() eq 'Infinite recursion in t/conf_public.ini line #84 [DEFAULT]: $[DEFAULT]{SIMPLE_LOOP} = "This is a $SIMPLE_LOOP"' ? ok() : nok();
+$conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #84 [DEFAULT]: \$[DEFAULT]{SIMPLE_LOOP} = \"This is a \$SIMPLE_LOOP\"" ? ok() : nok();
 defined Config::Manager::Conf->get('SIMPLE_LOOP') ? nok() : ok();
-Config::Manager::Conf->error() eq 'Infinite recursion in t/conf_public.ini line #84 [DEFAULT]: $[DEFAULT]{SIMPLE_LOOP} = "This is a $SIMPLE_LOOP"' ? ok() : nok();
+Config::Manager::Conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #84 [DEFAULT]: \$[DEFAULT]{SIMPLE_LOOP} = \"This is a \$SIMPLE_LOOP\"" ? ok() : nok();
 
 # Etwas weniger auffaellig
 $conf = conf();
 defined $conf->get('LOOP') ? nok() : ok();
-$conf->error() eq 'Infinite recursion in t/conf_public.ini line #87 [DEFAULT]: $[DEFAULT]{LOOP} = "$THIS will loop"' ? ok() : nok();
+$conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #87 [DEFAULT]: \$[DEFAULT]{LOOP} = \"\$THIS will loop\"" ? ok() : nok();
 defined Config::Manager::Conf->get('LOOP') ? nok() : ok();
-Config::Manager::Conf->error() eq 'Infinite recursion in t/conf_public.ini line #87 [DEFAULT]: $[DEFAULT]{LOOP} = "$THIS will loop"' ? ok() : nok();
+Config::Manager::Conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #87 [DEFAULT]: \$[DEFAULT]{LOOP} = \"\$THIS will loop\"" ? ok() : nok();
 
 # Unauffaellig
 $conf = conf();
 defined $conf->get('THAT') ? nok() : ok();
-$conf->error() eq 'Infinite recursion in t/conf_public.ini line #85 [DEFAULT]: $[DEFAULT]{THIS} = "This $WILL loop"' ? ok() : nok();
+$conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #85 [DEFAULT]: \$[DEFAULT]{THIS} = \"This \$WILL loop\"" ? ok() : nok();
 defined Config::Manager::Conf->get('THAT') ? nok() : ok();
-Config::Manager::Conf->error() eq 'Infinite recursion in t/conf_public.ini line #85 [DEFAULT]: $[DEFAULT]{THIS} = "This $WILL loop"' ? ok() : nok();
+Config::Manager::Conf->error() eq "Infinite recursion in file 't/conf_public.ini' line #85 [DEFAULT]: \$[DEFAULT]{THIS} = \"This \$WILL loop\"" ? ok() : nok();
 
 ############################################################
 # Qualifizierter Zugriff

@@ -27,16 +27,16 @@ use Config::Manager::User;
 print "1..4\n";
 
 my $n = 1;
-if ($Config::Manager::VERSION eq "1.2")
+if ($Config::Manager::VERSION eq "1.3")
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
-if ($Config::Manager::Conf::VERSION eq "1.2")
+if ($Config::Manager::Conf::VERSION eq "1.3")
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
-if ($Config::Manager::Report::VERSION eq "1.2")
+if ($Config::Manager::Report::VERSION eq "1.3")
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
-if ($Config::Manager::User::VERSION eq "1.2")
+if ($Config::Manager::User::VERSION eq "1.3")
 {print "ok $n\n";} else {print "not ok $n\n";}
 $n++;
 
